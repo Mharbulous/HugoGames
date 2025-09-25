@@ -182,6 +182,23 @@
             justify-content: center;
             font-size: 1.2em;
         }
+
+        .emergency-meeting-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .emergency-meeting-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .emergency-meeting-btn img {
+            max-width: 100px;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -411,12 +428,8 @@
                 if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
                 gameState.round++;
                 gameState.currentDeadCrewmate = -1;
-                setTimeout(() => {
-                    killNextCrewmate();
-                    document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
-                    document.getElementById('voteButtons').innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
-                    updateDisplay();
-                }, 3000);
+                // Show the emergency meeting button instead of automatic timeout
+                document.getElementById('voteButtons').innerHTML = '<button class="emergency-meeting-btn" onclick="startEmergencyMeeting()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>';
             });
         }
 
@@ -444,6 +457,26 @@
                 voteInstructions.innerHTML = `The grammar impostors have taken over! The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>`;
                 gameState.gameOver = true;
             }
+        }
+
+        function startEmergencyMeeting() {
+            // Play emergency meeting sound
+            playEmergencyMeetingSound();
+
+            // Kill next crewmate and start new round
+            killNextCrewmate();
+            document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
+            document.getElementById('voteButtons').innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
+            updateDisplay();
+        }
+
+        function playEmergencyMeetingSound() {
+            // Try to play the EmergencyMeetingSound.mp3 file
+            const audio = new Audio('EmergencyMeetingSound.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(error => {
+                console.log('Could not play emergency meeting sound:', error);
+            });
         }
 
         function startNewGame() { initializeGame(); }
