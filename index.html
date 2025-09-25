@@ -1,13 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hugo's French Practice Games</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        h1 { color: #ff6b6b; text-align: center; }
+        .game-list { 
+            list-style: none; 
+            padding: 0; 
+        }
+        .game-item {
+            background: rgba(255,255,255,0.1);
+            margin: 15px 0;
+            border-radius: 10px;
+            border: 2px solid #4ecdc4;
+        }
+        .game-item a {
+            display: block;
+            padding: 20px;
+            color: #4ecdc4;
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .game-item a:hover {
+            background: rgba(78, 205, 196, 0.2);
+            border-radius: 8px;
+        }
+        .description {
+            color: #ccc;
+            font-size: 0.9em;
+            font-weight: normal;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hugo's French Games</h1>
-    <ul>
-        <li><a href="Among French - Grammar Impostor Game v2.0.html">French Grammar Impostors</a></li>
-        <!-- Add new games here -->
+    <h1>🎮 Hugo's French Practice Games 🇫🇷</h1>
+    <ul class="game-list">
+        <li class="game-item">
+            <a href="french-grammar-impostors.html">
+                French Grammar Impostors
+                <div class="description">Find the impostors who speak French with English grammar!</div>
+            </a>
+        </li>
     </ul>
 </body>
 </html>
