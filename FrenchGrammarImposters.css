@@ -104,6 +104,12 @@ body {
     z-index: 10;
 }
 
+.crewmate.dead:not(.recently-dead) .speech-bubble,
+.crewmate.ejected:not(.recently-dead) .speech-bubble {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
 .voting-area {
     width: 100%;
     max-width: 800px;
@@ -140,6 +146,11 @@ body {
     background: #666 !important;
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.vote-btn.voting-disabled {
+    opacity: 0 !important;
+    pointer-events: none;
 }
 
 .new-game-btn {

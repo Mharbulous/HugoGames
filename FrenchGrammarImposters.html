@@ -53,7 +53,66 @@
             {name: 'Banane', color: '#FFFFBE'}
         ];
 
-        let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
+        const violentDeathPhrases = [
+            "ARGH!",
+            "GLOUPS!",
+            "AÏEEE!",
+            "OUGH!",
+            "URGH!",
+            "TCHAC!"
+        ];
+
+        const innocentEjectionPhrases = [
+            "Non, pas moi!",
+            "Je suis innocent!",
+            "Vous vous trompez!",
+            "J'espère que les aliens sont sympas!",
+            "Mais j'ai fait toutes mes tâches!",
+            "Vous le regretterez!",
+            "Ce n'était pas moi, je vous jure!",
+            "Houston, on a un problème!",
+            "Eventuellement, j'ai arrêté de penser...",
+            "Dites à ma famille que je les aime!",
+            "C'était pas moi, je le jure!",
+            "That was kinda sus.",
+            "it wasn't me :("
+        ];
+
+        const imposterEjectionPhrases = [
+            "Au moins, je vais voir les étoiles!",
+            "Je reviendrai!",
+            "À bientôt, astronautes!",
+            "Vive la gravité zéro!",
+            "J'aurais dû rester au lit!",
+            "Vous avez eu de la chance cette fois!",
+            "Bien joué, les terriens!",
+            "L'espace, me voilà!",
+            "Ma mission est accomplie!",
+            "Merci pour cette partie!",
+            "On se revoit dans l'espace infini!",
+            "GG les amis!",
+            "Eventuellement, Kars a arrêté de penser..."
+        ];
+
+        function getRandomDeathPhrase(deathType) {
+            let phrases;
+            switch(deathType) {
+                case 'violent':
+                    phrases = violentDeathPhrases;
+                    break;
+                case 'innocent_ejected':
+                    phrases = innocentEjectionPhrases;
+                    break;
+                case 'impostor_ejected':
+                    phrases = imposterEjectionPhrases;
+                    break;
+                default:
+                    phrases = violentDeathPhrases;
+            }
+            return phrases[Math.floor(Math.random() * phrases.length)];
+        }
+
+        let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false };
         let audioContext = null, clickBuffer = null;
 
         function initAudio() {
@@ -120,9 +179,9 @@
         }
 
         function initializeGame() {
-            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
-            document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
-            document.getElementById('voteInstructions').innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
+            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false };
+            document.querySelector('.vote-title').innerHTML = 'French Grammar Impostors';
+            document.getElementById('voteInstructions').innerHTML = 'Initializing game...';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
 
@@ -172,6 +231,42 @@
             }
 
             updateDisplay();
+
+            // Start the first emergency meeting after a brief delay
+            setTimeout(startFirstEmergencyMeeting, 1000);
+        }
+
+        function startFirstEmergencyMeeting() {
+            // Kill a random innocent crewmate first
+            const aliveInnocents = gameState.crewmates.filter(c => c.alive && !c.ejected && !c.isImpostor);
+            if (aliveInnocents.length > 0) {
+                const victim = aliveInnocents[Math.floor(Math.random() * aliveInnocents.length)];
+                victim.alive = false;
+                victim.deathPhrase = getRandomDeathPhrase('violent');
+                gameState.currentDeadCrewmate = victim.id;
+
+                // Show the emergency meeting with dead crewmate info
+                document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
+                document.getElementById('voteInstructions').innerHTML = `A crewmate has been killed!<br><br>
+                    <div class="dead-crewmate-display">
+                        <div class="dead-crewmate-body-small" style="background-color: ${victim.color}">☠️</div>
+                        <strong>${victim.name}</strong>
+                    </div><br>
+                    Les imposteurs parlent français avec la grammaire anglaise.<br><br>
+                    Votez pour éliminer celui que vous pensez être un imposteur.`;
+
+                // Play emergency meeting sound
+                playEmergencyMeetingSound();
+
+                // Enable voting
+                gameState.hasVoted = false;
+                gameState.votingPhase = 'emergency_meeting';
+
+                // Update vote buttons area
+                document.getElementById('voteButtons').innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
+
+                updateDisplay();
+            }
         }
 
         function updateDisplay() {
@@ -179,18 +274,48 @@
             const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
 
             const crewmatesArea = document.getElementById('crewmatesArea');
-            crewmatesArea.innerHTML = gameState.crewmates.map(c => `
-                <div class="crewmate ${c.alive ? 'alive' : 'dead'} ${c.ejected ? 'ejected' : ''}">
+            const votingDisabled = gameState.votingPhase !== 'emergency_meeting' || gameState.hasVoted;
+            crewmatesArea.innerHTML = gameState.crewmates.map(c => {
+                // Determine speech bubble content and styling
+                let speechContent = c.phrase;
+                let isRecentlyDead = false;
+
+                if (!c.alive && !c.ejected) {
+                    // This crewmate is dead (killed by impostor)
+                    if (c.id === gameState.currentDeadCrewmate) {
+                        // This is the most recently killed crewmate - show death phrase
+                        speechContent = c.deathPhrase || c.phrase;
+                        isRecentlyDead = true;
+                    } else {
+                        // This is an old dead crewmate - speech will be hidden by CSS
+                        speechContent = c.phrase;
+                    }
+                } else if (c.ejected) {
+                    // This crewmate is ejected (voted out)
+                    if (c.id === gameState.currentEjectedCrewmate) {
+                        // This is the most recently ejected crewmate - show death phrase
+                        speechContent = c.deathPhrase || c.phrase;
+                        isRecentlyDead = true;
+                    } else {
+                        // This is an old ejected crewmate - speech will be hidden by CSS
+                        speechContent = c.phrase;
+                    }
+                }
+
+                return `
+                <div class="crewmate ${c.alive ? 'alive' : 'dead'} ${c.ejected ? 'ejected' : ''} ${isRecentlyDead ? 'recently-dead' : ''}">
                     <div class="crewmate-body" style="background-color: ${c.color}">
                         ${c.alive && !c.ejected ? '👤' : (c.ejected ? '💀' : '☠️')}
                     </div>
-                    <div class="speech-bubble">${c.phrase}</div>
-                    <button class="vote-btn" style="background-color: ${c.color}; color: ${c.color === '#FFFFFF' || c.color === '#F5F557' ? '#000' : '#FFF'}"
+                    <div class="speech-bubble">${speechContent}</div>
+                    <button class="vote-btn ${votingDisabled ? 'voting-disabled' : ''}"
+                        style="background-color: ${c.color}; color: ${c.color === '#FFFFFF' || c.color === '#F5F557' ? '#000' : '#FFF'}"
                         onclick="vote(${c.id})" ${!c.alive || c.ejected || gameState.isRevealing || gameState.gameOver ? 'disabled' : ''}>
                         Voter ${c.name}
                     </button>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             const voteButtons = document.getElementById('voteButtons');
             const voteInstructions = document.getElementById('voteInstructions');
@@ -214,9 +339,13 @@
         }
 
         function vote(crewmateId) {
-            if (gameState.isRevealing || gameState.gameOver) return;
+            if (gameState.isRevealing || gameState.gameOver || gameState.hasVoted || gameState.votingPhase !== 'emergency_meeting') return;
+            gameState.hasVoted = true;
+            gameState.votingPhase = 'vote_results';
             const votedCrewmate = gameState.crewmates[crewmateId];
             votedCrewmate.ejected = true;
+            votedCrewmate.deathPhrase = getRandomDeathPhrase(votedCrewmate.isImpostor ? 'impostor_ejected' : 'innocent_ejected');
+            gameState.currentEjectedCrewmate = crewmateId;
             updateDisplay();
             startSuspensefulReveal(votedCrewmate);
         }
@@ -244,6 +373,8 @@
                 if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
                 gameState.round++;
                 gameState.currentDeadCrewmate = -1;
+                gameState.currentEjectedCrewmate = -1;
+                gameState.votingPhase = 'between_rounds';
 
                 // Update the stats with actual values and make the button visible and clickable
                 const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
@@ -258,6 +389,7 @@
                         <div class="stat">Manche: <span id="round">${gameState.round}</span></div>
                     </div>
                 `;
+                updateDisplay();
             });
         }
 
@@ -266,6 +398,7 @@
             if (aliveInnocents.length > 0) {
                 const victim = aliveInnocents[Math.floor(Math.random() * aliveInnocents.length)];
                 victim.alive = false;
+                victim.deathPhrase = getRandomDeathPhrase('violent');
                 gameState.currentDeadCrewmate = victim.id;
             }
         }
@@ -290,6 +423,10 @@
         function startEmergencyMeeting() {
             // Play emergency meeting sound
             playEmergencyMeetingSound();
+
+            // Reset voting state and enable voting
+            gameState.hasVoted = false;
+            gameState.votingPhase = 'emergency_meeting';
 
             // Kill next crewmate and start new round
             killNextCrewmate();
