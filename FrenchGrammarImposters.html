@@ -33,24 +33,24 @@
             { correct: "Je vais chez le médecin.", impostor: "Je vais au médecin." },
             { correct: "Je suis allé à Victoria.", impostor: "J'ai allé à Victoria." },
             { correct: "J'ai peur et j'ai froid.", impostor: "J'ai peur et je suis froid." },
-            { correct: "Je l'aime parce qu'il est le meilleur.", impostor: "Je l'aime lui parce qu'il est le meilleur." }
+            { correct: "Je l'aime parce qu'il est le meilleur.", impostor: "Je l'aime lui parce qu'il est le meilleur." },
+            { correct: "Je prends le petit-déjeuner ce matin.", impostor: "Je mange le petit-déjeuner ce matin." },
+            { correct: "J'ai hâte d'aller à la fête.", impostor: "Je suis excité pour la fête." },
+            { correct: "Mon chien est très grand et gentil.", impostor: "Mon chien est très grand et amical." },
+            { correct: "Je fais mes devoirs depuis trois heures.", impostor: "Je suis en train de faire mes devoirs pour trois heures." },
+            { correct: "C'est un beau jour pour sortir.", impostor: "C'est un beau jour pour dehors." }
         ];
 
-        const standaloneImpostorPhrases = [
-            { impostor: "Je mange le petit-déjeuner ce matin.", correct: "Je prends le petit-déjeuner ce matin." },
-            { impostor: "Je suis excité pour la fête.", correct: "J'ai hâte d'aller à la fête." },
-            { impostor: "Mon chien est très grand et amical.", correct: "Mon chien est très grand et gentil." },
-            { impostor: "Je suis en train de faire mes devoirs pour trois heures.", correct: "Je fais mes devoirs depuis trois heures." },
-            { impostor: "C'est un beau jour pour dehors.", correct: "C'est un beau jour pour sortir." }
-        ];
 
         const crewmateData = [
-            {name: 'Rouge', color: '#C51111'}, {name: 'Bleu', color: '#132ED1'},
-            {name: 'Vert', color: '#117F2D'}, {name: 'Rose', color: '#ED54BA'},
-            {name: 'Orange', color: '#EF7D0D'}, {name: 'Jaune', color: '#F5F557'},
-            {name: 'Noir', color: '#000000'}, {name: 'Blanc', color: '#FFFFFF'},
-            {name: 'Violet', color: '#6B2FBB'}, {name: 'Marron', color: '#8B4513'},
-            {name: 'Cyan', color: '#00FFFF'}, {name: 'Vert lime', color: '#32CD32'}
+            {name: 'Rouge', color: '#D71E22'}, {name: 'Bleu', color: '#1D3CE9'},
+            {name: 'Vert', color: '#1B913E'}, {name: 'Rose', color: '#FF63D4'},
+            {name: 'Orange', color: '#FF8D1C'}, {name: 'Jaune', color: '#FFFF67'},
+            {name: 'Noir', color: '#4A565E'}, {name: 'Blanc', color: '#E9F7FF'},
+            {name: 'Violet', color: '#783DD2'}, {name: 'Marron', color: '#80582D'},
+            {name: 'Cyan', color: '#44FFF7'}, {name: 'Citron', color: '#5BFE4B'},
+            {name: 'Bordeaux', color: '#6C2B3D'}, {name: 'Chair', color: '#FFD6EC'},
+            {name: 'Banane', color: '#FFFFBE'}
         ];
 
         let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
@@ -124,45 +124,53 @@
             document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
             document.getElementById('voteInstructions').innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
-            const shuffledStandalone = [...standaloneImpostorPhrases].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
 
-            for (let i = 0; i < 7; i++) {
+            // Track which phrase pairs are used by crewmates
+            const usedPairIndices = new Set();
+
+            // Assign 10 crewmates, each with a different phrase pair
+            for (let i = 0; i < 10; i++) {
                 gameState.crewmates.push({
                     id: i, phrase: shuffledPairs[i].correct, isImpostor: false,
                     alive: true, ejected: false, color: shuffledCrewmateData[i].color,
                     name: shuffledCrewmateData[i].name, pairIndex: i
                 });
+                usedPairIndices.add(i);
             }
 
-            gameState.crewmates.push({
-                id: 7, phrase: shuffledPairs[0].impostor, correctPhrase: shuffledPairs[0].correct,
-                isImpostor: true, alive: true, ejected: false, color: shuffledCrewmateData[7].color,
-                name: shuffledCrewmateData[7].name, pairIndex: 0, impostorType: 'paired'
-            });
-            gameState.impostors.push(7);
+            // Create list of unused pairs for impostor priority assignment
+            const unusedPairIndices = [];
+            for (let i = 10; i < shuffledPairs.length; i++) {
+                unusedPairIndices.push(i);
+            }
 
-            const secondPairIndex = Math.floor(Math.random() * 6) + 1;
-            gameState.crewmates.push({
-                id: 8, phrase: shuffledPairs[secondPairIndex].impostor,
-                correctPhrase: shuffledPairs[secondPairIndex].correct, isImpostor: true,
-                alive: true, ejected: false, color: shuffledCrewmateData[8].color,
-                name: shuffledCrewmateData[8].name, pairIndex: secondPairIndex, impostorType: 'paired'
-            });
-            gameState.impostors.push(8);
+            // Shuffle unused pairs for random selection
+            unusedPairIndices.sort(() => Math.random() - 0.5);
 
-            for (let i = 9; i < 12; i++) {
+            // Assign 5 impostors using the prioritized system
+            for (let impostorIndex = 0; impostorIndex < 5; impostorIndex++) {
+                const crewmateId = 10 + impostorIndex;
+                let pairIndex;
+
+                // Priority 1: Use unused pairs if available
+                if (unusedPairIndices.length > 0) {
+                    pairIndex = unusedPairIndices.pop();
+                } else {
+                    // Priority 2: Reuse pairs already assigned to crewmates
+                    const usedIndicesArray = Array.from(usedPairIndices);
+                    pairIndex = usedIndicesArray[Math.floor(Math.random() * usedIndicesArray.length)];
+                }
+
                 gameState.crewmates.push({
-                    id: i, phrase: shuffledStandalone[i - 9].impostor,
-                    correctPhrase: shuffledStandalone[i - 9].correct, isImpostor: true,
-                    alive: true, ejected: false, color: shuffledCrewmateData[i].color,
-                    name: shuffledCrewmateData[i].name, impostorType: 'standalone'
+                    id: crewmateId, phrase: shuffledPairs[pairIndex].impostor,
+                    correctPhrase: shuffledPairs[pairIndex].correct, isImpostor: true,
+                    alive: true, ejected: false, color: shuffledCrewmateData[crewmateId].color,
+                    name: shuffledCrewmateData[crewmateId].name, pairIndex: pairIndex
                 });
-                gameState.impostors.push(i);
+                gameState.impostors.push(crewmateId);
             }
 
-            gameState.currentDeadCrewmate = 0;
-            gameState.crewmates[0].alive = false;
             updateDisplay();
         }
 
@@ -197,6 +205,8 @@
                         <div class="dead-crewmate-body-small" style="background-color: ${dead.color}">☠️</div>
                         <div style="color: ${dead.color === '#FFFFFF' || dead.color === '#F5F557' ? '#000' : '#FFF'}; font-weight: bold;">${dead.name}</div>
                     </div>Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.`;
+                } else {
+                    voteInstructions.innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
                 }
                 voteButtons.innerHTML = '';
             }

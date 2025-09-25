@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(start FrenchGrammarImposters.html)"
+      "Bash(start FrenchGrammarImposters.html)",
+      "WebFetch(domain:fr.wikipedia.org)",
+      "WebSearch",
+      "WebFetch(domain:among-us.fandom.com)"
     ],
     "deny": [],
     "ask": []
