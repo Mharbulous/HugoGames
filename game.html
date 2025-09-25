@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Grammar Impostors</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .version {
+            font-size: 0.9em;
+            color: #4ecdc4;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #4ecdc4;
+            margin-bottom: 30px;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #4ecdc4;
+        }
+
+        .crewmates-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .crewmate {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 3px solid #4ecdc4;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .crewmate.alive {
+            opacity: 1;
+        }
+
+        .crewmate.dead {
+            opacity: 0.3;
+            border-color: #666;
+            background: rgba(255,0,0,0.1);
+        }
+
+        .crewmate.ejected {
+            opacity: 0.2;
+            border-color: #333;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .crewmate-body {
+            width: 60px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border-radius: 30px 30px 15px 15px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+
+        .speech-bubble {
+            background: white;
+            color: #333;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 10px 0;
+            position: relative;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid white;
+        }
+
+        .crewmate-name {
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-top: 10px;
+        }
+
+        .voting-area {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .vote-title {
+            font-size: 1.5em;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+
+        .vote-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .vote-btn {
+            border: none;
+            padding: 15px 10px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .vote-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .vote-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .game-message {
+            font-size: 1.2em;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            min-height: 60px;
+        }
+
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 2px solid #f44336;
+            color: #f44336;
+        }
+
+        .info {
+            background: rgba(78, 205, 196, 0.2);
+            border: 2px solid #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        .new-game-btn {
+            background: #ff6b6b;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .new-game-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .explanation {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #ccc;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .reveal-text {
+            color: inherit;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">French Grammar Impostors</h1>
+    <div class="version">Version 3.0</div>
+    
+    <div class="voting-area" id="votingArea">
+        <div class="vote-title">🚨 Réunion d'urgence! 🚨</div>
+        <p>Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):</p>
+        <div class="vote-buttons" id="voteButtons"><p>Cliquez sur le bouton sous chaque personnage pour voter pour l'éliminer!</p></div>
+    </div>
+
+    <div id="gameMessage" class="game-message info">
+        Conseil: Les imposteurs parlent français avec la grammaire anglaise.
+    </div>
+
+    <div class="game-stats">
+        <div class="stat">Imposteurs: <span id="impostorsLeft">5</span></div>
+        <div class="stat">Coéquipiers: <span id="crewmatesLeft">6</span></div>
+        <div class="stat">Manche: <span id="round">1</span></div>
+    </div>
+
+    <div class="crewmates-area" id="crewmatesArea"></div>
+
+    <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
+
+    <script>
+        // Game data - correct phrases paired with their impostor versions
+        const phrasePairs = [
+            {
+                correct: "Lundi, j'ai un match de soccer.",
+                impostor: "Sur lundi, j'ai un match de soccer."
+            },
+            {
+                correct: "J'ai regardé un film à la télévision.",
+                impostor: "J'ai regardé un film sur la télévision."
+            },
+            {
+                correct: "Je n'ai pas de crayon.",
+                impostor: "Je n'ai pas un crayon."
+            },
+            {
+                correct: "J'ai chaud. Est-ce que je peux avoir un verre d'eau?",
+                impostor: "Je suis chaud. Est-ce que je peux avoir un verre de l'eau?"
+            },
+            {
+                correct: "Qu'est-ce que tu fais ici? Oh, rien du tout!",
+                impostor: "Quoi est-ce que tu fais ici? Oh, rien!"
+            },
+            {
+                correct: "Quelle heure est-il?",
+                impostor: "Quel temps est-il?"
+            },
+            {
+                correct: "Je vais chez le médecin.",
+                impostor: "Je vais au médecin."
+            },
+            {
+                correct: "Je suis allé à Victoria.",
+                impostor: "J'ai allé à Victoria."
+            },
+            {
+                correct: "J'ai peur et j'ai froid.",
+                impostor: "J'ai peur et je suis froid."
+            },
+            {
+                correct: "Je l'aime parce qu'il est le meilleur.",
+                impostor: "Je l'aime lui parce qu'il est le meilleur."
+            }
+        ];
+
+        // Additional impostor-only phrases (no correct version present) - using French words but English grammar
+        const standaloneImpostorPhrases = [
+            "Je mange le petit-déjeuner ce matin.",
+            "Est-ce que tu veux aller au magasin?",
+            "Mon chien est très grand et amical.",
+            "Je vais à l'école aujourd'hui.",
+            "C'est un beau jour pour dehors."
+        ];
+
+        // Official Among Us colors with proper hex codes matched to names
+        const crewmateData = [
+            {name: 'Red', color: '#C51111'},
+            {name: 'Blue', color: '#132ED1'},
+            {name: 'Green', color: '#117F2D'},
+            {name: 'Pink', color: '#ED54BA'},
+            {name: 'Orange', color: '#EF7D0D'},
+            {name: 'Yellow', color: '#F5F557'},
+            {name: 'Black', color: '#000000'},
+            {name: 'White', color: '#FFFFFF'},
+            {name: 'Purple', color: '#6B2FBB'},
+            {name: 'Brown', color: '#8B4513'},
+            {name: 'Cyan', color: '#00FFFF'},
+            {name: 'Lime', color: '#32CD32'}
+        ];
+
+        let gameState = {
+            crewmates: [],
+            impostors: [],
+            round: 1,
+            gameOver: false,
+            currentDeadCrewmate: -1,
+            isRevealing: false
+        };
+
+        // Audio system - initialize once and reuse
+        let audioContext = null;
+        let clickBuffer = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function createClickBuffer() {
+            if (!audioContext) return null;
+            
+            if (clickBuffer) return clickBuffer;
+            
+            const bufferSize = audioContext.sampleRate * 0.02; // 20ms click
+            clickBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = clickBuffer.getChannelData(0);
+            
+            // Generate sharp click sound
+            for (let i = 0; i < bufferSize; i++) {
+                if (i < bufferSize * 0.1) {
+                    // Sharp attack
+                    output[i] = (Math.random() * 2 - 1) * Math.pow((bufferSize * 0.1 - i) / (bufferSize * 0.1), 2);
+                } else if (i < bufferSize * 0.3) {
+                    // Quick decay
+                    output[i] = (Math.random() * 2 - 1) * 0.3 * Math.pow((bufferSize * 0.3 - i) / (bufferSize * 0.2), 3);
+                } else {
+                    output[i] = 0;
+                }
+            }
+            
+            return clickBuffer;
+        }
+
+        function scheduleClick(time) {
+            if (!audioContext || !clickBuffer) return;
+            
+            const source = audioContext.createBufferSource();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            source.buffer = clickBuffer;
+            
+            // Configure filter for mechanical sound
+            filter.type = 'highpass';
+            filter.frequency.value = 2000;
+            filter.Q.value = 1;
+            
+            // Set volume
+            gainNode.gain.value = 0.15;
+            
+            // Connect nodes
+            source.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Schedule to play at the specified time
+            source.start(time);
+        }
+
+        function revealTextWithSync(element, text, onComplete) {
+            if (gameState.isRevealing) return;
+            gameState.isRevealing = true;
+            
+            // Initialize audio system
+            initAudio();
+            createClickBuffer();
+            
+            // Clear element and add reveal-text class for styling
+            element.innerHTML = '<span class="reveal-text"></span>';
+            const textSpan = element.querySelector('.reveal-text');
+            
+            // Calculate timings for all characters
+            const charTimings = [];
+            let currentTime = 0;
+            
+            for (let i = 0; i < text.length; i++) {
+                charTimings.push(currentTime);
+                
+                // Check for dramatic pause after "..."
+                if (i >= 2 && 
+                    text[i] === '.' && 
+                    text[i - 1] === '.' && 
+                    text[i - 2] === '.' &&
+                    i < text.length - 1) {
+                    currentTime += 1200; // Dramatic pause
+                } else {
+                    currentTime += 60; // Normal speed
+                }
+            }
+            
+            // Schedule all sounds at once using Web Audio API timing
+            if (audioContext) {
+                const startTime = audioContext.currentTime + 0.1; // Small delay to ensure sync
+                
+                for (let i = 0; i < text.length; i++) {
+                    scheduleClick(startTime + charTimings[i] / 1000);
+                }
+            }
+            
+            // Schedule all visual updates using requestAnimationFrame for smooth rendering
+            let startTimestamp = null;
+            let currentIndex = 0;
+            
+            function animate(timestamp) {
+                if (!startTimestamp) {
+                    startTimestamp = timestamp;
+                }
+                
+                const elapsed = timestamp - startTimestamp;
+                
+                // Update text based on elapsed time
+                while (currentIndex < text.length && elapsed >= charTimings[currentIndex]) {
+                    textSpan.textContent = text.substring(0, currentIndex + 1);
+                    currentIndex++;
+                }
+                
+                if (currentIndex < text.length) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Complete
+                    gameState.isRevealing = false;
+                    if (onComplete) onComplete();
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        function initializeGame() {
+            gameState = {
+                crewmates: [],
+                impostors: [],
+                round: 1,
+                gameOver: false,
+                currentDeadCrewmate: -1,
+                tutorialPairIndex: -1,
+                isRevealing: false
+            };
+
+            // Shuffle arrays for randomization
+            const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
+            const shuffledStandalone = [...standaloneImpostorPhrases].sort(() => Math.random() - 0.5);
+            const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
+
+            // Choose tutorial pair
+            gameState.tutorialPairIndex = 0;
+
+            // Create 7 innocent crewmates
+            gameState.crewmates.push({
+                id: 0,
+                phrase: shuffledPairs[0].correct,
+                isImpostor: false,
+                alive: true,
+                ejected: false,
+                color: shuffledCrewmateData[0].color,
+                name: shuffledCrewmateData[0].name,
+                pairIndex: 0
+            });
+
+            for (let i = 1; i < 7; i++) {
+                gameState.crewmates.push({
+                    id: i,
+                    phrase: shuffledPairs[i].correct,
+                    isImpostor: false,
+                    alive: true,
+                    ejected: false,
+                    color: shuffledCrewmateData[i].color,
+                    name: shuffledCrewmateData[i].name,
+                    pairIndex: i
+                });
+            }
+
+            // Create 2 paired impostors
+            gameState.crewmates.push({
+                id: 7,
+                phrase: shuffledPairs[0].impostor,
+                isImpostor: true,
+                alive: true,
+                ejected: false,
+                color: shuffledCrewmateData[7].color,
+                name: shuffledCrewmateData[7].name,
+                pairIndex: 0,
+                impostorType: 'paired'
+            });
+            gameState.impostors.push(7);
+
+            const secondPairIndex = Math.floor(Math.random() * 6) + 1;
+            gameState.crewmates.push({
+                id: 8,
+                phrase: shuffledPairs[secondPairIndex].impostor,
+                isImpostor: true,
+                alive: true,
+                ejected: false,
+                color: shuffledCrewmateData[8].color,
+                name: shuffledCrewmateData[8].name,
+                pairIndex: secondPairIndex,
+                impostorType: 'paired'
+            });
+            gameState.impostors.push(8);
+
+            // Create 3 standalone impostors
+            for (let i = 9; i < 12; i++) {
+                gameState.crewmates.push({
+                    id: i,
+                    phrase: shuffledStandalone[i - 9],
+                    isImpostor: true,
+                    alive: true,
+                    ejected: false,
+                    color: shuffledCrewmateData[i].color,
+                    name: shuffledCrewmateData[i].name,
+                    impostorType: 'standalone'
+                });
+                gameState.impostors.push(i);
+            }
+
+            // Kill the tutorial crewmate
+            gameState.currentDeadCrewmate = 0;
+            gameState.crewmates[0].alive = false;
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
+            const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
+            
+            document.getElementById('impostorsLeft').textContent = aliveImpostors;
+            document.getElementById('crewmatesLeft').textContent = aliveInnocents;
+            document.getElementById('round').textContent = gameState.round;
+
+            const crewmatesArea = document.getElementById('crewmatesArea');
+            crewmatesArea.innerHTML = '';
+            
+            gameState.crewmates.forEach(crewmate => {
+                const crewmateDiv = document.createElement('div');
+                crewmateDiv.className = `crewmate ${crewmate.alive ? 'alive' : 'dead'} ${crewmate.ejected ? 'ejected' : ''}`;
+                
+                const voteButton = document.createElement('button');
+                voteButton.className = 'vote-btn';
+                voteButton.style.backgroundColor = crewmate.color;
+                voteButton.style.color = crewmate.color === '#FFFFFF' || crewmate.color === '#F5F557' ? '#000' : '#FFF';
+                voteButton.textContent = `Voter ${crewmate.name}`;
+                voteButton.onclick = () => vote(crewmate.id);
+                if (!crewmate.alive || crewmate.ejected || gameState.isRevealing || gameState.gameOver) {
+                    voteButton.disabled = true;
+                    voteButton.style.opacity = '0.3';
+                }
+
+                crewmateDiv.innerHTML = `
+                    <div class="crewmate-body" style="background-color: ${crewmate.color}">
+                        ${crewmate.alive && !crewmate.ejected ? '👤' : (crewmate.ejected ? '💀' : '☠️')}
+                    </div>
+                    <div class="speech-bubble">${crewmate.phrase}</div>
+                `;
+                
+                crewmateDiv.appendChild(voteButton);
+                crewmatesArea.appendChild(crewmateDiv);
+            });
+
+            const voteButtons = document.getElementById('voteButtons');
+            if (gameState.gameOver) {
+                voteButtons.innerHTML = '<p style="color: #4ecdc4;">Jeu terminé - Aucun vote disponible</p>';
+            } else if (gameState.isRevealing) {
+                voteButtons.innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
+            } else {
+                voteButtons.innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
+            }
+
+            checkGameEnd();
+        }
+
+        function vote(crewmateId) {
+            if (gameState.isRevealing || gameState.gameOver) return;
+            
+            const votedCrewmate = gameState.crewmates[crewmateId];
+            votedCrewmate.ejected = true;
+            
+            // Disable all vote buttons during reveal
+            updateDisplay();
+            
+            startSuspensefulReveal(votedCrewmate);
+        }
+
+        function startSuspensefulReveal(votedCrewmate) {
+            const messageDiv = document.getElementById('gameMessage');
+            
+            // Scroll to top immediately when reveal starts
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Reset to neutral styling during reveal
+            messageDiv.className = 'game-message info';
+            
+            let revealText = '';
+            
+            if (votedCrewmate.isImpostor) {
+                if (votedCrewmate.impostorType === 'paired') {
+                    const correctVersion = phrasePairs[votedCrewmate.pairIndex].correct;
+                    revealText = `"${votedCrewmate.phrase}" uses English grammar... The correct French is: "${correctVersion}"... ${votedCrewmate.name} was An Impostor.`;
+                } else {
+                    revealText = `"${votedCrewmate.phrase}" uses English grammar patterns... ${votedCrewmate.name} was An Impostor.`;
+                }
+            } else {
+                revealText = `"${votedCrewmate.phrase}" follows proper French grammar... ${votedCrewmate.name} was not An Impostor.`;
+            }
+            
+            // Start the typing animation with synchronized beeps
+            revealTextWithSync(messageDiv, revealText, () => {
+                finishReveal(votedCrewmate);
+            });
+        }
+
+        function finishReveal(votedCrewmate) {
+            const messageDiv = document.getElementById('gameMessage');
+            
+            if (votedCrewmate.isImpostor) {
+                messageDiv.className = 'game-message success';
+                
+                // Add explanation after reveal text
+                let explanation = '<div class="explanation">';
+                if (votedCrewmate.impostorType === 'paired') {
+                    explanation += `<strong>Explication:</strong> This phrase incorrectly translates English grammar patterns into French.`;
+                } else {
+                    explanation += `<strong>Explication:</strong> This phrase mixes English sentence structure with French words.`;
+                }
+                explanation += '</div>';
+                
+                messageDiv.innerHTML += explanation;
+                
+                gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
+                
+            } else {
+                messageDiv.className = 'game-message error';
+                
+                // Add explanation
+                const explanation = `<div class="explanation"><strong>Explication:</strong> This phrase correctly follows French grammar rules and patterns.</div>`;
+                messageDiv.innerHTML += explanation;
+                
+                setTimeout(() => {
+                    killNextCrewmate();
+                }, 3000);
+            }
+            
+            gameState.round++;
+            updateDisplay();
+        }
+
+        function killNextCrewmate() {
+            const aliveInnocents = gameState.crewmates.filter(c => 
+                c.alive && !c.ejected && !c.isImpostor
+            );
+            
+            if (aliveInnocents.length > 0) {
+                const victimIndex = Math.floor(Math.random() * aliveInnocents.length);
+                const victim = aliveInnocents[victimIndex];
+                victim.alive = false;
+                
+                const messageDiv = document.getElementById('gameMessage');
+                messageDiv.className = 'game-message info';
+                messageDiv.innerHTML = `💀 ${victim.name} has been eliminated! Another emergency meeting called.`;
+                
+                updateDisplay();
+            }
+        }
+
+        function checkGameEnd() {
+            const aliveImpostors = gameState.crewmates.filter(c => 
+                c.isImpostor && c.alive && !c.ejected
+            ).length;
+            
+            const aliveInnocents = gameState.crewmates.filter(c => 
+                !c.isImpostor && c.alive && !c.ejected
+            ).length;
+            
+            const messageDiv = document.getElementById('gameMessage');
+            
+            if (aliveImpostors === 0) {
+                messageDiv.className = 'game-message success';
+                messageDiv.innerHTML = `
+                    <strong>🎉 Victory!</strong> You found all the grammar impostors! 
+                    Hugo has saved the French language from English grammar mistakes!
+                `;
+                gameState.gameOver = true;
+                
+            } else if (aliveImpostors >= aliveInnocents) {
+                messageDiv.className = 'game-message error';
+                messageDiv.innerHTML = `
+                    <strong>💀 Game Over!</strong> The grammar impostors have taken over! 
+                    The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}
+                `;
+                gameState.gameOver = true;
+            }
+        }
+
+        function startNewGame() {
+            initializeGame();
+        }
+
+        // Ensure audio context is resumed on user interaction
+        document.addEventListener('click', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        });
+
+        // Start the game
+        initializeGame();
+    </script>
+</body>
+</html>
