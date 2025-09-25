@@ -306,13 +306,28 @@
             }
         ];
 
-        // Additional impostor-only phrases (no correct version present) - using French words but English grammar
+        // Additional impostor phrases with their correct versions - using French words but English grammar
         const standaloneImpostorPhrases = [
-            "Je mange le petit-déjeuner ce matin.",
-            "Est-ce que tu veux aller au magasin?",
-            "Mon chien est très grand et amical.",
-            "Je vais à l'école aujourd'hui.",
-            "C'est un beau jour pour dehors."
+            {
+                impostor: "Je mange le petit-déjeuner ce matin.",
+                correct: "Je prends le petit-déjeuner ce matin."
+            },
+            {
+                impostor: "Je suis excité pour la fête.",
+                correct: "J'ai hâte d'aller à la fête."
+            },
+            {
+                impostor: "Mon chien est très grand et amical.",
+                correct: "Mon chien est très grand et gentil."
+            },
+            {
+                impostor: "Je suis en train de faire mes devoirs pour trois heures.",
+                correct: "Je fais mes devoirs depuis trois heures."
+            },
+            {
+                impostor: "C'est un beau jour pour dehors.",
+                correct: "C'est un beau jour pour sortir."
+            }
         ];
 
         // Official Among Us colors with proper hex codes matched to names
@@ -454,7 +469,7 @@
                 
                 // Update text based on elapsed time
                 while (currentIndex < text.length && elapsed >= charTimings[currentIndex]) {
-                    textSpan.textContent = text.substring(0, currentIndex + 1);
+                    textSpan.innerHTML = text.substring(0, currentIndex + 1);
                     currentIndex++;
                 }
                 
@@ -546,7 +561,8 @@
             for (let i = 9; i < 12; i++) {
                 gameState.crewmates.push({
                     id: i,
-                    phrase: shuffledStandalone[i - 9],
+                    phrase: shuffledStandalone[i - 9].impostor,
+                    correctPhrase: shuffledStandalone[i - 9].correct,
                     isImpostor: true,
                     alive: true,
                     ejected: false,
@@ -639,12 +655,12 @@
             if (votedCrewmate.isImpostor) {
                 if (votedCrewmate.impostorType === 'paired') {
                     const correctVersion = phrasePairs[votedCrewmate.pairIndex].correct;
-                    revealText = `"${votedCrewmate.phrase}" uses English grammar... The correct French is: "${correctVersion}"... ${votedCrewmate.name} was An Impostor.`;
+                    revealText = `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${correctVersion}"...<br>${votedCrewmate.name} was An Impostor.`;
                 } else {
-                    revealText = `"${votedCrewmate.phrase}" uses English grammar patterns... ${votedCrewmate.name} was An Impostor.`;
+                    revealText = `"${votedCrewmate.phrase}" uses English grammar patterns...<br>The correct French way of saying this is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`;
                 }
             } else {
-                revealText = `"${votedCrewmate.phrase}" follows proper French grammar... ${votedCrewmate.name} was not An Impostor.`;
+                revealText = `"${votedCrewmate.phrase}" uses French grammar patterns...<br>${votedCrewmate.name} was not An Impostor.`;
             }
             
             // Start the typing animation with synchronized beeps
@@ -658,27 +674,12 @@
             
             if (votedCrewmate.isImpostor) {
                 messageDiv.className = 'game-message success';
-                
-                // Add explanation after reveal text
-                let explanation = '<div class="explanation">';
-                if (votedCrewmate.impostorType === 'paired') {
-                    explanation += `<strong>Explication:</strong> This phrase incorrectly translates English grammar patterns into French.`;
-                } else {
-                    explanation += `<strong>Explication:</strong> This phrase mixes English sentence structure with French words.`;
-                }
-                explanation += '</div>';
-                
-                messageDiv.innerHTML += explanation;
-                
+
                 gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
-                
+
             } else {
                 messageDiv.className = 'game-message error';
-                
-                // Add explanation
-                const explanation = `<div class="explanation"><strong>Explication:</strong> This phrase correctly follows French grammar rules and patterns.</div>`;
-                messageDiv.innerHTML += explanation;
-                
+
                 setTimeout(() => {
                     killNextCrewmate();
                 }, 3000);
