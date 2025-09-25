@@ -37,6 +37,7 @@
             gap: 30px;
             margin-bottom: 20px;
             font-size: 1.1em;
+            justify-content: center;
         }
 
         .stat {
@@ -102,11 +103,12 @@
         .speech-bubble::after {
             content: '';
             position: absolute;
-            top: -10px;
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
             border: 10px solid transparent;
             border-bottom-color: white;
+            z-index: 10;
         }
 
         .voting-area {
@@ -207,17 +209,11 @@
     
     <div class="voting-area">
         <div class="vote-title">🚨 Réunion d'urgence! 🚨</div>
-        <p id="voteInstructions">Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):</p>
-        <div id="voteButtons"><p>Cliquez sur le bouton sous chaque personnage pour voter pour l'éliminer!</p></div>
+        <p id="voteInstructions">Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.</p>
+        <div id="voteButtons"></div>
     </div>
 
-    <div class="game-message">Conseil: Les imposteurs parlent français avec la grammaire anglaise.</div>
 
-    <div class="game-stats">
-        <div class="stat">Imposteurs: <span id="impostorsLeft">5</span></div>
-        <div class="stat">Coéquipiers: <span id="crewmatesLeft">6</span></div>
-        <div class="stat">Manche: <span id="round">1</span></div>
-    </div>
 
     <div class="crewmates-area" id="crewmatesArea"></div>
 
@@ -323,7 +319,7 @@
         function initializeGame() {
             gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
             document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
-            document.getElementById('voteInstructions').innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
+            document.getElementById('voteInstructions').innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
             const shuffledStandalone = [...standaloneImpostorPhrases].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
@@ -370,9 +366,6 @@
         function updateDisplay() {
             const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
             const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
-            document.getElementById('impostorsLeft').textContent = aliveImpostors;
-            document.getElementById('crewmatesLeft').textContent = aliveInnocents;
-            document.getElementById('round').textContent = gameState.round;
 
             const crewmatesArea = document.getElementById('crewmatesArea');
             crewmatesArea.innerHTML = gameState.crewmates.map(c => `
@@ -393,16 +386,16 @@
             if (gameState.gameOver) {
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Jeu terminé - Aucun vote disponible</p>';
             } else if (gameState.isRevealing) {
-                voteButtons.innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
+                voteButtons.innerHTML = '';
             } else {
                 if (gameState.currentDeadCrewmate !== -1) {
                     const dead = gameState.crewmates[gameState.currentDeadCrewmate];
                     voteInstructions.innerHTML = `Un coéquipier est mort !<div class="dead-crewmate-display">
                         <div class="dead-crewmate-body-small" style="background-color: ${dead.color}">☠️</div>
                         <div style="color: ${dead.color === '#FFFFFF' || dead.color === '#F5F557' ? '#000' : '#FFF'}; font-weight: bold;">${dead.name}</div>
-                    </div>Votez pour éliminer celui que vous pensez être un imposteur:`;
+                    </div>Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.`;
                 }
-                voteButtons.innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
+                voteButtons.innerHTML = '';
             }
             checkGameEnd();
         }
@@ -418,18 +411,40 @@
         function startSuspensefulReveal(votedCrewmate) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             document.querySelector('.vote-title').innerHTML = '📊 Résultats du vote';
-            document.getElementById('voteButtons').innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
-            
-            let revealText = votedCrewmate.isImpostor 
-                ? `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`
-                : `"${votedCrewmate.phrase}" uses French grammar patterns...<br>${votedCrewmate.name} was not An Impostor.`;
-            
+
+            // Show transparent button immediately for spacing, with stats below
+            document.getElementById('voteButtons').innerHTML = `
+                <br><button class="emergency-meeting-btn" onclick="startEmergencyMeeting()" style="opacity: 0; pointer-events: none;" disabled><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
+                <br><br>
+                <div class="game-stats">
+                    <div class="stat">Imposteurs: <span id="impostorsLeft">-</span></div>
+                    <div class="stat">Coéquipiers: <span id="crewmatesLeft">-</span></div>
+                    <div class="stat">Manche: <span id="round">${gameState.round}</span></div>
+                </div>
+            `;
+
+            let revealText = votedCrewmate.isImpostor
+                ? `"${votedCrewmate.phrase}" utilise la grammaire anglaise...<br>Le français correct est : "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} était un imposteur.`
+                : `"${votedCrewmate.phrase}" utilise les règles de grammaire française...<br>${votedCrewmate.name} n'était pas un imposteur.`;
+
             revealTextWithSync(document.getElementById('voteInstructions'), revealText, () => {
                 if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
                 gameState.round++;
                 gameState.currentDeadCrewmate = -1;
-                // Show the emergency meeting button instead of automatic timeout
-                document.getElementById('voteButtons').innerHTML = '<button class="emergency-meeting-btn" onclick="startEmergencyMeeting()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>';
+
+                // Update the stats with actual values and make the button visible and clickable
+                const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
+                const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
+
+                document.getElementById('voteButtons').innerHTML = `
+                    <br><button class="emergency-meeting-btn" onclick="startEmergencyMeeting()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
+                    <br><br>
+                    <div class="game-stats">
+                        <div class="stat">Imposteurs: <span id="impostorsLeft">${aliveImpostors}</span></div>
+                        <div class="stat">Coéquipiers: <span id="crewmatesLeft">${aliveInnocents}</span></div>
+                        <div class="stat">Manche: <span id="round">${gameState.round}</span></div>
+                    </div>
+                `;
             });
         }
 
