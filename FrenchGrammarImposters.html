@@ -235,6 +235,23 @@
             color: inherit;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
+
+        .dead-crewmate-display {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .dead-crewmate-body-small {
+            width: 40px;
+            height: 50px;
+            margin: 10px auto;
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -330,20 +347,20 @@
             }
         ];
 
-        // Official Among Us colors with proper hex codes matched to names
+        // Official Among Us colors with proper hex codes matched to French names
         const crewmateData = [
-            {name: 'Red', color: '#C51111'},
-            {name: 'Blue', color: '#132ED1'},
-            {name: 'Green', color: '#117F2D'},
-            {name: 'Pink', color: '#ED54BA'},
+            {name: 'Rouge', color: '#C51111'},
+            {name: 'Bleu', color: '#132ED1'},
+            {name: 'Vert', color: '#117F2D'},
+            {name: 'Rose', color: '#ED54BA'},
             {name: 'Orange', color: '#EF7D0D'},
-            {name: 'Yellow', color: '#F5F557'},
-            {name: 'Black', color: '#000000'},
-            {name: 'White', color: '#FFFFFF'},
-            {name: 'Purple', color: '#6B2FBB'},
-            {name: 'Brown', color: '#8B4513'},
+            {name: 'Jaune', color: '#F5F557'},
+            {name: 'Noir', color: '#000000'},
+            {name: 'Blanc', color: '#FFFFFF'},
+            {name: 'Violet', color: '#6B2FBB'},
+            {name: 'Marron', color: '#8B4513'},
             {name: 'Cyan', color: '#00FFFF'},
-            {name: 'Lime', color: '#32CD32'}
+            {name: 'Vert lime', color: '#32CD32'}
         ];
 
         let gameState = {
@@ -485,6 +502,23 @@
             requestAnimationFrame(animate);
         }
 
+        function generateDeadCrewmateDisplay(crewmateId) {
+            const crewmate = gameState.crewmates[crewmateId];
+            if (!crewmate) return '';
+
+            // Use same color logic as vote buttons for contrast
+            const nameColor = crewmate.color === '#FFFFFF' || crewmate.color === '#F5F557' ? '#000' : '#FFF';
+
+            return `
+                <div class="dead-crewmate-display">
+                    <div class="dead-crewmate-body-small" style="background-color: ${crewmate.color}">
+                        ☠️
+                    </div>
+                    <div style="color: ${nameColor}; font-weight: bold; font-size: 0.9em;">${crewmate.name}</div>
+                </div>
+            `;
+        }
+
         function initializeGame() {
             gameState = {
                 crewmates: [],
@@ -495,6 +529,12 @@
                 tutorialPairIndex: -1,
                 isRevealing: false
             };
+
+            // Reset voting area text to original emergency meeting text
+            const voteTitle = document.querySelector('.vote-title');
+            const voteInstructions = document.querySelector('.voting-area p');
+            if (voteTitle) voteTitle.innerHTML = '🚨 Réunion d\'urgence! 🚨';
+            if (voteInstructions) voteInstructions.innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
 
             // Shuffle arrays for randomization
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
@@ -533,6 +573,7 @@
             gameState.crewmates.push({
                 id: 7,
                 phrase: shuffledPairs[0].impostor,
+                correctPhrase: shuffledPairs[0].correct,
                 isImpostor: true,
                 alive: true,
                 ejected: false,
@@ -547,6 +588,7 @@
             gameState.crewmates.push({
                 id: 8,
                 phrase: shuffledPairs[secondPairIndex].impostor,
+                correctPhrase: shuffledPairs[secondPairIndex].correct,
                 isImpostor: true,
                 alive: true,
                 ejected: false,
@@ -618,11 +660,20 @@
             });
 
             const voteButtons = document.getElementById('voteButtons');
+            const voteInstructions = document.querySelector('.voting-area p');
+
             if (gameState.gameOver) {
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Jeu terminé - Aucun vote disponible</p>';
             } else if (gameState.isRevealing) {
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
             } else {
+                // Check if we need to show dead crewmate
+                if (gameState.currentDeadCrewmate !== -1 && voteInstructions) {
+                    const deadCrewmateHtml = generateDeadCrewmateDisplay(gameState.currentDeadCrewmate);
+                    voteInstructions.innerHTML = `Un coéquipier est mort !${deadCrewmateHtml}Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):`;
+                } else if (voteInstructions) {
+                    voteInstructions.innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
+                }
                 voteButtons.innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
             }
 
@@ -654,8 +705,7 @@
             
             if (votedCrewmate.isImpostor) {
                 if (votedCrewmate.impostorType === 'paired') {
-                    const correctVersion = phrasePairs[votedCrewmate.pairIndex].correct;
-                    revealText = `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${correctVersion}"...<br>${votedCrewmate.name} was An Impostor.`;
+                    revealText = `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`;
                 } else {
                     revealText = `"${votedCrewmate.phrase}" uses English grammar patterns...<br>The correct French way of saying this is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`;
                 }
@@ -671,7 +721,10 @@
 
         function finishReveal(votedCrewmate) {
             const messageDiv = document.getElementById('gameMessage');
-            
+
+            // Reset the dead crewmate display after vote is completed
+            gameState.currentDeadCrewmate = -1;
+
             if (votedCrewmate.isImpostor) {
                 messageDiv.className = 'game-message success';
 
@@ -684,54 +737,57 @@
                     killNextCrewmate();
                 }, 3000);
             }
-            
+
             gameState.round++;
             updateDisplay();
         }
 
         function killNextCrewmate() {
-            const aliveInnocents = gameState.crewmates.filter(c => 
+            const aliveInnocents = gameState.crewmates.filter(c =>
                 c.alive && !c.ejected && !c.isImpostor
             );
-            
+
             if (aliveInnocents.length > 0) {
                 const victimIndex = Math.floor(Math.random() * aliveInnocents.length);
                 const victim = aliveInnocents[victimIndex];
                 victim.alive = false;
-                
+
+                // Track the most recently killed crewmate
+                gameState.currentDeadCrewmate = victim.id;
+
                 const messageDiv = document.getElementById('gameMessage');
                 messageDiv.className = 'game-message info';
                 messageDiv.innerHTML = `💀 ${victim.name} has been eliminated! Another emergency meeting called.`;
-                
+
                 updateDisplay();
             }
         }
 
         function checkGameEnd() {
-            const aliveImpostors = gameState.crewmates.filter(c => 
+            const aliveImpostors = gameState.crewmates.filter(c =>
                 c.isImpostor && c.alive && !c.ejected
             ).length;
-            
-            const aliveInnocents = gameState.crewmates.filter(c => 
+
+            const aliveInnocents = gameState.crewmates.filter(c =>
                 !c.isImpostor && c.alive && !c.ejected
             ).length;
-            
+
+            const voteTitle = document.querySelector('.vote-title');
+            const voteInstructions = document.querySelector('.voting-area p');
             const messageDiv = document.getElementById('gameMessage');
-            
+
             if (aliveImpostors === 0) {
-                messageDiv.className = 'game-message success';
-                messageDiv.innerHTML = `
-                    <strong>🎉 Victory!</strong> You found all the grammar impostors! 
-                    Hugo has saved the French language from English grammar mistakes!
-                `;
+                voteTitle.innerHTML = '🎉 Victory!';
+                voteInstructions.innerHTML = 'You found all the grammar impostors! Hugo has saved the French language from English grammar mistakes!<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>';
+                messageDiv.className = 'game-message info';
+                messageDiv.innerHTML = 'Conseil: Les imposteurs parlent français avec la grammaire anglaise.';
                 gameState.gameOver = true;
-                
+
             } else if (aliveImpostors >= aliveInnocents) {
-                messageDiv.className = 'game-message error';
-                messageDiv.innerHTML = `
-                    <strong>💀 Game Over!</strong> The grammar impostors have taken over! 
-                    The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}
-                `;
+                voteTitle.innerHTML = '💀 Game Over!';
+                voteInstructions.innerHTML = `The grammar impostors have taken over! The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>`;
+                messageDiv.className = 'game-message info';
+                messageDiv.innerHTML = 'Conseil: Les imposteurs parlent français avec la grammaire anglaise.';
                 gameState.gameOver = true;
             }
         }
