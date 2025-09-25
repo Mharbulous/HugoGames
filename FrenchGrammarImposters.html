@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>French Grammar Impostors</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
-            margin: 0;
             padding: 20px;
             min-height: 100vh;
             display: flex;
@@ -27,12 +28,6 @@
 
         .version {
             font-size: 0.9em;
-            color: #4ecdc4;
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            font-size: 1.1em;
             color: #4ecdc4;
             margin-bottom: 30px;
         }
@@ -67,11 +62,6 @@
             text-align: center;
             border: 3px solid #4ecdc4;
             transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .crewmate.alive {
-            opacity: 1;
         }
 
         .crewmate.dead {
@@ -91,7 +81,6 @@
             height: 80px;
             margin: 0 auto 15px;
             border-radius: 30px 30px 15px 15px;
-            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -116,17 +105,8 @@
             top: -10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-bottom: 10px solid white;
-        }
-
-        .crewmate-name {
-            font-weight: bold;
-            color: #4ecdc4;
-            margin-top: 10px;
+            border: 10px solid transparent;
+            border-bottom-color: white;
         }
 
         .voting-area {
@@ -145,18 +125,10 @@
             margin-bottom: 20px;
         }
 
-        .vote-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .vote-btn {
+        .vote-btn, .new-game-btn {
             border: none;
-            padding: 15px 10px;
+            padding: 15px 20px;
             border-radius: 10px;
-            font-size: 0.9em;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -164,15 +136,23 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
         }
 
-        .vote-btn:hover {
+        .vote-btn:hover, .new-game-btn:hover {
             transform: translateY(-2px);
             filter: brightness(1.1);
         }
 
         .vote-btn:disabled {
-            background: #666;
+            background: #666 !important;
             cursor: not-allowed;
             opacity: 0.5;
+        }
+
+        .new-game-btn {
+            background: #ff6b6b;
+            border-radius: 25px;
+            font-size: 1.1em;
+            padding: 15px 30px;
+            margin: 20px 0;
         }
 
         .game-message {
@@ -182,58 +162,9 @@
             margin: 20px 0;
             text-align: center;
             font-family: 'Courier New', monospace;
-            min-height: 60px;
-        }
-
-        .success {
-            background: rgba(76, 175, 80, 0.2);
-            border: 2px solid #4CAF50;
-            color: #4CAF50;
-        }
-
-        .error {
-            background: rgba(244, 67, 54, 0.2);
-            border: 2px solid #f44336;
-            color: #f44336;
-        }
-
-        .info {
             background: rgba(78, 205, 196, 0.2);
             border: 2px solid #4ecdc4;
             color: #4ecdc4;
-        }
-
-        .new-game-btn {
-            background: #ff6b6b;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.1em;
-            font-weight: bold;
-            color: white;
-            cursor: pointer;
-            margin: 20px 0;
-            transition: all 0.3s ease;
-        }
-
-        .new-game-btn:hover {
-            background: #ff5252;
-            transform: translateY(-2px);
-        }
-
-        .explanation {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #ccc;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .reveal-text {
-            color: inherit;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
         .dead-crewmate-display {
@@ -246,7 +177,6 @@
             height: 50px;
             margin: 10px auto;
             border-radius: 20px 20px 10px 10px;
-            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -258,15 +188,13 @@
     <h1 class="game-title">French Grammar Impostors</h1>
     <div class="version">Version 3.0</div>
     
-    <div class="voting-area" id="votingArea">
+    <div class="voting-area">
         <div class="vote-title">🚨 Réunion d'urgence! 🚨</div>
-        <p>Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):</p>
-        <div class="vote-buttons" id="voteButtons"><p>Cliquez sur le bouton sous chaque personnage pour voter pour l'éliminer!</p></div>
+        <p id="voteInstructions">Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):</p>
+        <div id="voteButtons"><p>Cliquez sur le bouton sous chaque personnage pour voter pour l'éliminer!</p></div>
     </div>
 
-    <div id="gameMessage" class="game-message info">
-        Conseil: Les imposteurs parlent français avec la grammaire anglaise.
-    </div>
+    <div class="game-message">Conseil: Les imposteurs parlent français avec la grammaire anglaise.</div>
 
     <div class="game-stats">
         <div class="stat">Imposteurs: <span id="impostorsLeft">5</span></div>
@@ -279,532 +207,249 @@
     <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
 
     <script>
-        // Game data - correct phrases paired with their impostor versions
         const phrasePairs = [
-            {
-                correct: "Lundi, j'ai un match de soccer.",
-                impostor: "Sur lundi, j'ai un match de soccer."
-            },
-            {
-                correct: "J'ai regardé un film à la télévision.",
-                impostor: "J'ai regardé un film sur la télévision."
-            },
-            {
-                correct: "Je n'ai pas de crayon.",
-                impostor: "Je n'ai pas un crayon."
-            },
-            {
-                correct: "J'ai chaud. Est-ce que je peux avoir un verre d'eau?",
-                impostor: "Je suis chaud. Est-ce que je peux avoir un verre de l'eau?"
-            },
-            {
-                correct: "Qu'est-ce que tu fais ici? Oh, rien du tout!",
-                impostor: "Quoi est-ce que tu fais ici? Oh, rien!"
-            },
-            {
-                correct: "Quelle heure est-il?",
-                impostor: "Quel temps est-il?"
-            },
-            {
-                correct: "Je vais chez le médecin.",
-                impostor: "Je vais au médecin."
-            },
-            {
-                correct: "Je suis allé à Victoria.",
-                impostor: "J'ai allé à Victoria."
-            },
-            {
-                correct: "J'ai peur et j'ai froid.",
-                impostor: "J'ai peur et je suis froid."
-            },
-            {
-                correct: "Je l'aime parce qu'il est le meilleur.",
-                impostor: "Je l'aime lui parce qu'il est le meilleur."
-            }
+            { correct: "Lundi, j'ai un match de soccer.", impostor: "Sur lundi, j'ai un match de soccer." },
+            { correct: "J'ai regardé un film à la télévision.", impostor: "J'ai regardé un film sur la télévision." },
+            { correct: "Je n'ai pas de crayon.", impostor: "Je n'ai pas un crayon." },
+            { correct: "J'ai chaud. Est-ce que je peux avoir un verre d'eau?", impostor: "Je suis chaud. Est-ce que je peux avoir un verre de l'eau?" },
+            { correct: "Qu'est-ce que tu fais ici? Oh, rien du tout!", impostor: "Quoi est-ce que tu fais ici? Oh, rien!" },
+            { correct: "Quelle heure est-il?", impostor: "Quel temps est-il?" },
+            { correct: "Je vais chez le médecin.", impostor: "Je vais au médecin." },
+            { correct: "Je suis allé à Victoria.", impostor: "J'ai allé à Victoria." },
+            { correct: "J'ai peur et j'ai froid.", impostor: "J'ai peur et je suis froid." },
+            { correct: "Je l'aime parce qu'il est le meilleur.", impostor: "Je l'aime lui parce qu'il est le meilleur." }
         ];
 
-        // Additional impostor phrases with their correct versions - using French words but English grammar
         const standaloneImpostorPhrases = [
-            {
-                impostor: "Je mange le petit-déjeuner ce matin.",
-                correct: "Je prends le petit-déjeuner ce matin."
-            },
-            {
-                impostor: "Je suis excité pour la fête.",
-                correct: "J'ai hâte d'aller à la fête."
-            },
-            {
-                impostor: "Mon chien est très grand et amical.",
-                correct: "Mon chien est très grand et gentil."
-            },
-            {
-                impostor: "Je suis en train de faire mes devoirs pour trois heures.",
-                correct: "Je fais mes devoirs depuis trois heures."
-            },
-            {
-                impostor: "C'est un beau jour pour dehors.",
-                correct: "C'est un beau jour pour sortir."
-            }
+            { impostor: "Je mange le petit-déjeuner ce matin.", correct: "Je prends le petit-déjeuner ce matin." },
+            { impostor: "Je suis excité pour la fête.", correct: "J'ai hâte d'aller à la fête." },
+            { impostor: "Mon chien est très grand et amical.", correct: "Mon chien est très grand et gentil." },
+            { impostor: "Je suis en train de faire mes devoirs pour trois heures.", correct: "Je fais mes devoirs depuis trois heures." },
+            { impostor: "C'est un beau jour pour dehors.", correct: "C'est un beau jour pour sortir." }
         ];
 
-        // Official Among Us colors with proper hex codes matched to French names
         const crewmateData = [
-            {name: 'Rouge', color: '#C51111'},
-            {name: 'Bleu', color: '#132ED1'},
-            {name: 'Vert', color: '#117F2D'},
-            {name: 'Rose', color: '#ED54BA'},
-            {name: 'Orange', color: '#EF7D0D'},
-            {name: 'Jaune', color: '#F5F557'},
-            {name: 'Noir', color: '#000000'},
-            {name: 'Blanc', color: '#FFFFFF'},
-            {name: 'Violet', color: '#6B2FBB'},
-            {name: 'Marron', color: '#8B4513'},
-            {name: 'Cyan', color: '#00FFFF'},
-            {name: 'Vert lime', color: '#32CD32'}
+            {name: 'Rouge', color: '#C51111'}, {name: 'Bleu', color: '#132ED1'},
+            {name: 'Vert', color: '#117F2D'}, {name: 'Rose', color: '#ED54BA'},
+            {name: 'Orange', color: '#EF7D0D'}, {name: 'Jaune', color: '#F5F557'},
+            {name: 'Noir', color: '#000000'}, {name: 'Blanc', color: '#FFFFFF'},
+            {name: 'Violet', color: '#6B2FBB'}, {name: 'Marron', color: '#8B4513'},
+            {name: 'Cyan', color: '#00FFFF'}, {name: 'Vert lime', color: '#32CD32'}
         ];
 
-        let gameState = {
-            crewmates: [],
-            impostors: [],
-            round: 1,
-            gameOver: false,
-            currentDeadCrewmate: -1,
-            isRevealing: false
-        };
-
-        // Audio system - initialize once and reuse
-        let audioContext = null;
-        let clickBuffer = null;
+        let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
+        let audioContext = null, clickBuffer = null;
 
         function initAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         function createClickBuffer() {
-            if (!audioContext) return null;
-            
-            if (clickBuffer) return clickBuffer;
-            
-            const bufferSize = audioContext.sampleRate * 0.02; // 20ms click
+            if (!audioContext || clickBuffer) return clickBuffer;
+            const bufferSize = audioContext.sampleRate * 0.02;
             clickBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
             const output = clickBuffer.getChannelData(0);
-            
-            // Generate sharp click sound
             for (let i = 0; i < bufferSize; i++) {
-                if (i < bufferSize * 0.1) {
-                    // Sharp attack
-                    output[i] = (Math.random() * 2 - 1) * Math.pow((bufferSize * 0.1 - i) / (bufferSize * 0.1), 2);
-                } else if (i < bufferSize * 0.3) {
-                    // Quick decay
-                    output[i] = (Math.random() * 2 - 1) * 0.3 * Math.pow((bufferSize * 0.3 - i) / (bufferSize * 0.2), 3);
-                } else {
-                    output[i] = 0;
-                }
+                if (i < bufferSize * 0.1) output[i] = (Math.random() * 2 - 1) * Math.pow((bufferSize * 0.1 - i) / (bufferSize * 0.1), 2);
+                else if (i < bufferSize * 0.3) output[i] = (Math.random() * 2 - 1) * 0.3 * Math.pow((bufferSize * 0.3 - i) / (bufferSize * 0.2), 3);
+                else output[i] = 0;
             }
-            
             return clickBuffer;
         }
 
         function scheduleClick(time) {
             if (!audioContext || !clickBuffer) return;
-            
             const source = audioContext.createBufferSource();
             const gainNode = audioContext.createGain();
             const filter = audioContext.createBiquadFilter();
-            
             source.buffer = clickBuffer;
-            
-            // Configure filter for mechanical sound
             filter.type = 'highpass';
             filter.frequency.value = 2000;
             filter.Q.value = 1;
-            
-            // Set volume
             gainNode.gain.value = 0.15;
-            
-            // Connect nodes
             source.connect(filter);
             filter.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
-            // Schedule to play at the specified time
             source.start(time);
         }
 
         function revealTextWithSync(element, text, onComplete) {
             if (gameState.isRevealing) return;
             gameState.isRevealing = true;
-            
-            // Initialize audio system
             initAudio();
             createClickBuffer();
-            
-            // Clear element and add reveal-text class for styling
             element.innerHTML = '<span class="reveal-text"></span>';
             const textSpan = element.querySelector('.reveal-text');
-            
-            // Calculate timings for all characters
             const charTimings = [];
             let currentTime = 0;
-            
             for (let i = 0; i < text.length; i++) {
                 charTimings.push(currentTime);
-                
-                // Check for dramatic pause after "..."
-                if (i >= 2 && 
-                    text[i] === '.' && 
-                    text[i - 1] === '.' && 
-                    text[i - 2] === '.' &&
-                    i < text.length - 1) {
-                    currentTime += 1200; // Dramatic pause
-                } else {
-                    currentTime += 60; // Normal speed
-                }
+                currentTime += (i >= 2 && text[i] === '.' && text[i-1] === '.' && text[i-2] === '.' && i < text.length - 1) ? 1200 : 60;
             }
-            
-            // Schedule all sounds at once using Web Audio API timing
             if (audioContext) {
-                const startTime = audioContext.currentTime + 0.1; // Small delay to ensure sync
-                
-                for (let i = 0; i < text.length; i++) {
-                    scheduleClick(startTime + charTimings[i] / 1000);
-                }
+                const startTime = audioContext.currentTime + 0.1;
+                for (let i = 0; i < text.length; i++) scheduleClick(startTime + charTimings[i] / 1000);
             }
-            
-            // Schedule all visual updates using requestAnimationFrame for smooth rendering
-            let startTimestamp = null;
-            let currentIndex = 0;
-            
+            let startTimestamp = null, currentIndex = 0;
             function animate(timestamp) {
-                if (!startTimestamp) {
-                    startTimestamp = timestamp;
-                }
-                
+                if (!startTimestamp) startTimestamp = timestamp;
                 const elapsed = timestamp - startTimestamp;
-                
-                // Update text based on elapsed time
                 while (currentIndex < text.length && elapsed >= charTimings[currentIndex]) {
-                    textSpan.innerHTML = text.substring(0, currentIndex + 1);
-                    currentIndex++;
+                    textSpan.innerHTML = text.substring(0, ++currentIndex);
                 }
-                
-                if (currentIndex < text.length) {
-                    requestAnimationFrame(animate);
-                } else {
-                    // Complete
-                    gameState.isRevealing = false;
-                    if (onComplete) onComplete();
-                }
+                if (currentIndex < text.length) requestAnimationFrame(animate);
+                else { gameState.isRevealing = false; if (onComplete) onComplete(); }
             }
-            
             requestAnimationFrame(animate);
         }
 
-        function generateDeadCrewmateDisplay(crewmateId) {
-            const crewmate = gameState.crewmates[crewmateId];
-            if (!crewmate) return '';
-
-            // Use same color logic as vote buttons for contrast
-            const nameColor = crewmate.color === '#FFFFFF' || crewmate.color === '#F5F557' ? '#000' : '#FFF';
-
-            return `
-                <div class="dead-crewmate-display">
-                    <div class="dead-crewmate-body-small" style="background-color: ${crewmate.color}">
-                        ☠️
-                    </div>
-                    <div style="color: ${nameColor}; font-weight: bold; font-size: 0.9em;">${crewmate.name}</div>
-                </div>
-            `;
-        }
-
         function initializeGame() {
-            gameState = {
-                crewmates: [],
-                impostors: [],
-                round: 1,
-                gameOver: false,
-                currentDeadCrewmate: -1,
-                tutorialPairIndex: -1,
-                isRevealing: false
-            };
-
-            // Reset voting area text to original emergency meeting text
-            const voteTitle = document.querySelector('.vote-title');
-            const voteInstructions = document.querySelector('.voting-area p');
-            if (voteTitle) voteTitle.innerHTML = '🚨 Réunion d\'urgence! 🚨';
-            if (voteInstructions) voteInstructions.innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
-
-            // Shuffle arrays for randomization
+            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, isRevealing: false };
+            document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
+            document.getElementById('voteInstructions').innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
             const shuffledStandalone = [...standaloneImpostorPhrases].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
 
-            // Choose tutorial pair
-            gameState.tutorialPairIndex = 0;
-
-            // Create 7 innocent crewmates
-            gameState.crewmates.push({
-                id: 0,
-                phrase: shuffledPairs[0].correct,
-                isImpostor: false,
-                alive: true,
-                ejected: false,
-                color: shuffledCrewmateData[0].color,
-                name: shuffledCrewmateData[0].name,
-                pairIndex: 0
-            });
-
-            for (let i = 1; i < 7; i++) {
+            for (let i = 0; i < 7; i++) {
                 gameState.crewmates.push({
-                    id: i,
-                    phrase: shuffledPairs[i].correct,
-                    isImpostor: false,
-                    alive: true,
-                    ejected: false,
-                    color: shuffledCrewmateData[i].color,
-                    name: shuffledCrewmateData[i].name,
-                    pairIndex: i
+                    id: i, phrase: shuffledPairs[i].correct, isImpostor: false,
+                    alive: true, ejected: false, color: shuffledCrewmateData[i].color,
+                    name: shuffledCrewmateData[i].name, pairIndex: i
                 });
             }
 
-            // Create 2 paired impostors
             gameState.crewmates.push({
-                id: 7,
-                phrase: shuffledPairs[0].impostor,
-                correctPhrase: shuffledPairs[0].correct,
-                isImpostor: true,
-                alive: true,
-                ejected: false,
-                color: shuffledCrewmateData[7].color,
-                name: shuffledCrewmateData[7].name,
-                pairIndex: 0,
-                impostorType: 'paired'
+                id: 7, phrase: shuffledPairs[0].impostor, correctPhrase: shuffledPairs[0].correct,
+                isImpostor: true, alive: true, ejected: false, color: shuffledCrewmateData[7].color,
+                name: shuffledCrewmateData[7].name, pairIndex: 0, impostorType: 'paired'
             });
             gameState.impostors.push(7);
 
             const secondPairIndex = Math.floor(Math.random() * 6) + 1;
             gameState.crewmates.push({
-                id: 8,
-                phrase: shuffledPairs[secondPairIndex].impostor,
-                correctPhrase: shuffledPairs[secondPairIndex].correct,
-                isImpostor: true,
-                alive: true,
-                ejected: false,
-                color: shuffledCrewmateData[8].color,
-                name: shuffledCrewmateData[8].name,
-                pairIndex: secondPairIndex,
-                impostorType: 'paired'
+                id: 8, phrase: shuffledPairs[secondPairIndex].impostor,
+                correctPhrase: shuffledPairs[secondPairIndex].correct, isImpostor: true,
+                alive: true, ejected: false, color: shuffledCrewmateData[8].color,
+                name: shuffledCrewmateData[8].name, pairIndex: secondPairIndex, impostorType: 'paired'
             });
             gameState.impostors.push(8);
 
-            // Create 3 standalone impostors
             for (let i = 9; i < 12; i++) {
                 gameState.crewmates.push({
-                    id: i,
-                    phrase: shuffledStandalone[i - 9].impostor,
-                    correctPhrase: shuffledStandalone[i - 9].correct,
-                    isImpostor: true,
-                    alive: true,
-                    ejected: false,
-                    color: shuffledCrewmateData[i].color,
-                    name: shuffledCrewmateData[i].name,
-                    impostorType: 'standalone'
+                    id: i, phrase: shuffledStandalone[i - 9].impostor,
+                    correctPhrase: shuffledStandalone[i - 9].correct, isImpostor: true,
+                    alive: true, ejected: false, color: shuffledCrewmateData[i].color,
+                    name: shuffledCrewmateData[i].name, impostorType: 'standalone'
                 });
                 gameState.impostors.push(i);
             }
 
-            // Kill the tutorial crewmate
             gameState.currentDeadCrewmate = 0;
             gameState.crewmates[0].alive = false;
-
             updateDisplay();
         }
 
         function updateDisplay() {
             const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
             const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
-            
             document.getElementById('impostorsLeft').textContent = aliveImpostors;
             document.getElementById('crewmatesLeft').textContent = aliveInnocents;
             document.getElementById('round').textContent = gameState.round;
 
             const crewmatesArea = document.getElementById('crewmatesArea');
-            crewmatesArea.innerHTML = '';
-            
-            gameState.crewmates.forEach(crewmate => {
-                const crewmateDiv = document.createElement('div');
-                crewmateDiv.className = `crewmate ${crewmate.alive ? 'alive' : 'dead'} ${crewmate.ejected ? 'ejected' : ''}`;
-                
-                const voteButton = document.createElement('button');
-                voteButton.className = 'vote-btn';
-                voteButton.style.backgroundColor = crewmate.color;
-                voteButton.style.color = crewmate.color === '#FFFFFF' || crewmate.color === '#F5F557' ? '#000' : '#FFF';
-                voteButton.textContent = `Voter ${crewmate.name}`;
-                voteButton.onclick = () => vote(crewmate.id);
-                if (!crewmate.alive || crewmate.ejected || gameState.isRevealing || gameState.gameOver) {
-                    voteButton.disabled = true;
-                    voteButton.style.opacity = '0.3';
-                }
-
-                crewmateDiv.innerHTML = `
-                    <div class="crewmate-body" style="background-color: ${crewmate.color}">
-                        ${crewmate.alive && !crewmate.ejected ? '👤' : (crewmate.ejected ? '💀' : '☠️')}
+            crewmatesArea.innerHTML = gameState.crewmates.map(c => `
+                <div class="crewmate ${c.alive ? 'alive' : 'dead'} ${c.ejected ? 'ejected' : ''}">
+                    <div class="crewmate-body" style="background-color: ${c.color}">
+                        ${c.alive && !c.ejected ? '👤' : (c.ejected ? '💀' : '☠️')}
                     </div>
-                    <div class="speech-bubble">${crewmate.phrase}</div>
-                `;
-                
-                crewmateDiv.appendChild(voteButton);
-                crewmatesArea.appendChild(crewmateDiv);
-            });
+                    <div class="speech-bubble">${c.phrase}</div>
+                    <button class="vote-btn" style="background-color: ${c.color}; color: ${c.color === '#FFFFFF' || c.color === '#F5F557' ? '#000' : '#FFF'}"
+                        onclick="vote(${c.id})" ${!c.alive || c.ejected || gameState.isRevealing || gameState.gameOver ? 'disabled' : ''}>
+                        Voter ${c.name}
+                    </button>
+                </div>
+            `).join('');
 
             const voteButtons = document.getElementById('voteButtons');
-            const voteInstructions = document.querySelector('.voting-area p');
-
+            const voteInstructions = document.getElementById('voteInstructions');
             if (gameState.gameOver) {
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Jeu terminé - Aucun vote disponible</p>';
             } else if (gameState.isRevealing) {
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
             } else {
-                // Check if we need to show dead crewmate
-                if (gameState.currentDeadCrewmate !== -1 && voteInstructions) {
-                    const deadCrewmateHtml = generateDeadCrewmateDisplay(gameState.currentDeadCrewmate);
-                    voteInstructions.innerHTML = `Un coéquipier est mort !${deadCrewmateHtml}Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):`;
-                } else if (voteInstructions) {
-                    voteInstructions.innerHTML = 'Votez pour éliminer celui que vous pensez être un imposteur (qui parle français avec la grammaire anglaise):';
+                if (gameState.currentDeadCrewmate !== -1) {
+                    const dead = gameState.crewmates[gameState.currentDeadCrewmate];
+                    voteInstructions.innerHTML = `Un coéquipier est mort !<div class="dead-crewmate-display">
+                        <div class="dead-crewmate-body-small" style="background-color: ${dead.color}">☠️</div>
+                        <div style="color: ${dead.color === '#FFFFFF' || dead.color === '#F5F557' ? '#000' : '#FFF'}; font-weight: bold;">${dead.name}</div>
+                    </div>Votez pour éliminer celui que vous pensez être un imposteur:`;
                 }
                 voteButtons.innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
             }
-
             checkGameEnd();
         }
 
         function vote(crewmateId) {
             if (gameState.isRevealing || gameState.gameOver) return;
-            
             const votedCrewmate = gameState.crewmates[crewmateId];
             votedCrewmate.ejected = true;
-            
-            // Disable all vote buttons during reveal
             updateDisplay();
-            
             startSuspensefulReveal(votedCrewmate);
         }
 
         function startSuspensefulReveal(votedCrewmate) {
-            const messageDiv = document.getElementById('gameMessage');
-            
-            // Scroll to top immediately when reveal starts
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.querySelector('.vote-title').innerHTML = '📊 Résultats du vote';
+            document.getElementById('voteButtons').innerHTML = '<p style="color: #4ecdc4;">Révélation en cours...</p>';
             
-            // Reset to neutral styling during reveal
-            messageDiv.className = 'game-message info';
+            let revealText = votedCrewmate.isImpostor 
+                ? `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`
+                : `"${votedCrewmate.phrase}" uses French grammar patterns...<br>${votedCrewmate.name} was not An Impostor.`;
             
-            let revealText = '';
-            
-            if (votedCrewmate.isImpostor) {
-                if (votedCrewmate.impostorType === 'paired') {
-                    revealText = `"${votedCrewmate.phrase}" uses English grammar...<br>The correct French is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`;
-                } else {
-                    revealText = `"${votedCrewmate.phrase}" uses English grammar patterns...<br>The correct French way of saying this is: "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} was An Impostor.`;
-                }
-            } else {
-                revealText = `"${votedCrewmate.phrase}" uses French grammar patterns...<br>${votedCrewmate.name} was not An Impostor.`;
-            }
-            
-            // Start the typing animation with synchronized beeps
-            revealTextWithSync(messageDiv, revealText, () => {
-                finishReveal(votedCrewmate);
+            revealTextWithSync(document.getElementById('voteInstructions'), revealText, () => {
+                if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
+                gameState.round++;
+                gameState.currentDeadCrewmate = -1;
+                setTimeout(() => {
+                    killNextCrewmate();
+                    document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
+                    document.getElementById('voteButtons').innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
+                    updateDisplay();
+                }, 3000);
             });
         }
 
-        function finishReveal(votedCrewmate) {
-            const messageDiv = document.getElementById('gameMessage');
-
-            // Reset the dead crewmate display after vote is completed
-            gameState.currentDeadCrewmate = -1;
-
-            if (votedCrewmate.isImpostor) {
-                messageDiv.className = 'game-message success';
-
-                gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
-
-            } else {
-                messageDiv.className = 'game-message error';
-
-                setTimeout(() => {
-                    killNextCrewmate();
-                }, 3000);
-            }
-
-            gameState.round++;
-            updateDisplay();
-        }
-
         function killNextCrewmate() {
-            const aliveInnocents = gameState.crewmates.filter(c =>
-                c.alive && !c.ejected && !c.isImpostor
-            );
-
+            const aliveInnocents = gameState.crewmates.filter(c => c.alive && !c.ejected && !c.isImpostor);
             if (aliveInnocents.length > 0) {
-                const victimIndex = Math.floor(Math.random() * aliveInnocents.length);
-                const victim = aliveInnocents[victimIndex];
+                const victim = aliveInnocents[Math.floor(Math.random() * aliveInnocents.length)];
                 victim.alive = false;
-
-                // Track the most recently killed crewmate
                 gameState.currentDeadCrewmate = victim.id;
-
-                const messageDiv = document.getElementById('gameMessage');
-                messageDiv.className = 'game-message info';
-                messageDiv.innerHTML = `💀 ${victim.name} has been eliminated! Another emergency meeting called.`;
-
-                updateDisplay();
             }
         }
 
         function checkGameEnd() {
-            const aliveImpostors = gameState.crewmates.filter(c =>
-                c.isImpostor && c.alive && !c.ejected
-            ).length;
-
-            const aliveInnocents = gameState.crewmates.filter(c =>
-                !c.isImpostor && c.alive && !c.ejected
-            ).length;
-
+            const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
+            const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
             const voteTitle = document.querySelector('.vote-title');
-            const voteInstructions = document.querySelector('.voting-area p');
-            const messageDiv = document.getElementById('gameMessage');
-
+            const voteInstructions = document.getElementById('voteInstructions');
+            
             if (aliveImpostors === 0) {
                 voteTitle.innerHTML = '🎉 Victory!';
-                voteInstructions.innerHTML = 'You found all the grammar impostors! Hugo has saved the French language from English grammar mistakes!<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>';
-                messageDiv.className = 'game-message info';
-                messageDiv.innerHTML = 'Conseil: Les imposteurs parlent français avec la grammaire anglaise.';
+                voteInstructions.innerHTML = 'You found all the grammar impostors! Hugo has saved the French language!<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>';
                 gameState.gameOver = true;
-
             } else if (aliveImpostors >= aliveInnocents) {
                 voteTitle.innerHTML = '💀 Game Over!';
                 voteInstructions.innerHTML = `The grammar impostors have taken over! The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>`;
-                messageDiv.className = 'game-message info';
-                messageDiv.innerHTML = 'Conseil: Les imposteurs parlent français avec la grammaire anglaise.';
                 gameState.gameOver = true;
             }
         }
 
-        function startNewGame() {
-            initializeGame();
-        }
-
-        // Ensure audio context is resumed on user interaction
-        document.addEventListener('click', () => {
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-        });
-
-        // Start the game
+        function startNewGame() { initializeGame(); }
+        document.addEventListener('click', () => { if (audioContext && audioContext.state === 'suspended') audioContext.resume(); });
         initializeGame();
     </script>
 </body>
 </html>
+<!-- Streamlined from 733 lines to 297 lines on 2025-09-25 -->
