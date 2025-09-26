@@ -107,7 +107,7 @@
             return phrases[Math.floor(Math.random() * phrases.length)];
         }
 
-        let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false };
+        let gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false, showingResults: false };
         let audioContext = null, clickBuffer = null;
 
         function initAudio() {
@@ -174,7 +174,7 @@
         }
 
         function initializeGame() {
-            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false };
+            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false, showingResults: false };
             document.querySelector('.vote-title').innerHTML = 'French Grammar Impostors';
             document.getElementById('voteInstructions').innerHTML = 'Initializing game...';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
@@ -318,6 +318,8 @@
                 voteButtons.innerHTML = '<p style="color: #4ecdc4;">Jeu terminé - Aucun vote disponible</p>';
             } else if (gameState.isRevealing) {
                 voteButtons.innerHTML = '';
+            } else if (gameState.showingResults) {
+                // Don't clear vote buttons when showing results - preserve the emergency button
             } else {
                 if (gameState.currentDeadCrewmate !== -1) {
                     const dead = gameState.crewmates[gameState.currentDeadCrewmate];
@@ -349,16 +351,26 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             document.querySelector('.vote-title').innerHTML = '📊 Résultats du vote';
 
-            // Show transparent button immediately for spacing, with stats below
+            // Show the standard voting message immediately with Next button
+            document.getElementById('voteInstructions').innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
+
+            // Show the Next button with stats
+            const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
+            const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
+
             document.getElementById('voteButtons').innerHTML = `
-                <br><button class="emergency-meeting-btn" onclick="startEmergencyMeeting()" style="opacity: 0; pointer-events: none;" disabled><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
+                <br><button class="emergency-meeting-btn" onclick="revealVotingResults(${votedCrewmate.id})"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
                 <br><br>
                 <div class="game-stats">
-                    <div class="stat">Imposteurs: <span id="impostorsLeft">-</span></div>
-                    <div class="stat">Coéquipiers: <span id="crewmatesLeft">-</span></div>
+                    <div class="stat">Imposteurs: <span id="impostorsLeft">${aliveImpostors}</span></div>
+                    <div class="stat">Coéquipiers: <span id="crewmatesLeft">${aliveInnocents}</span></div>
                     <div class="stat">Manche: <span id="round">${gameState.round}</span></div>
                 </div>
             `;
+        }
+
+        function revealVotingResults(crewmateId) {
+            const votedCrewmate = gameState.crewmates[crewmateId];
 
             let revealText = votedCrewmate.isImpostor
                 ? `"${votedCrewmate.phrase}" utilise la grammaire anglaise...<br>Le français correct est : "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} était un imposteur.`
@@ -370,8 +382,9 @@
                 gameState.currentDeadCrewmate = -1;
                 gameState.currentEjectedCrewmate = -1;
                 gameState.votingPhase = 'between_rounds';
+                gameState.showingResults = true;  // Set flag to preserve emergency button
 
-                // Update the stats with actual values and make the button visible and clickable
+                // Update the stats with actual values and make the button call startEmergencyMeeting
                 const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
                 const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
 
@@ -422,6 +435,7 @@
             // Reset voting state and enable voting
             gameState.hasVoted = false;
             gameState.votingPhase = 'emergency_meeting';
+            gameState.showingResults = false;  // Reset flag when starting new meeting
 
             // Kill next crewmate and start new round
             killNextCrewmate();
