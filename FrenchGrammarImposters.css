@@ -81,6 +81,13 @@ body {
     font-size: 1.5em;
 }
 
+.crewmate-body svg {
+    width: 100%;
+    height: 100%;
+    max-width: 50px;
+    max-height: 70px;
+}
+
 .speech-bubble {
     background: white;
     color: #333;
