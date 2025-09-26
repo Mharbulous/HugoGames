@@ -174,9 +174,9 @@
         }
 
         function initializeGame() {
-            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'between_rounds', hasVoted: false, showingResults: false };
+            gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'game_start', hasVoted: false, showingResults: false };
             document.querySelector('.vote-title').innerHTML = 'French Grammar Impostors';
-            document.getElementById('voteInstructions').innerHTML = 'Initializing game...';
+            document.getElementById('voteInstructions').innerHTML = 'Les imposteurs tentent de détruire la langue française avec la grammaire anglaise.<br><br>Éliminez les imposteurs. Vive l\'Alliance Française !';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
 
@@ -202,6 +202,9 @@
             // Shuffle unused pairs for random selection
             unusedPairIndices.sort(() => Math.random() - 0.5);
 
+            // Track which pairs have been assigned to impostors to prevent duplicates
+            const impostorUsedPairs = new Set();
+
             // Assign 5 impostors using the prioritized system
             for (let impostorIndex = 0; impostorIndex < 5; impostorIndex++) {
                 const crewmateId = 10 + impostorIndex;
@@ -211,10 +214,20 @@
                 if (unusedPairIndices.length > 0) {
                     pairIndex = unusedPairIndices.pop();
                 } else {
-                    // Priority 2: Reuse pairs already assigned to crewmates
-                    const usedIndicesArray = Array.from(usedPairIndices);
-                    pairIndex = usedIndicesArray[Math.floor(Math.random() * usedIndicesArray.length)];
+                    // Priority 2: Reuse pairs already assigned to crewmates, but avoid duplicates among impostors
+                    const usedIndicesArray = Array.from(usedPairIndices).filter(index => !impostorUsedPairs.has(index));
+
+                    // If all crewmate pairs are already used by impostors, fall back to any crewmate pair
+                    if (usedIndicesArray.length === 0) {
+                        const allUsedIndices = Array.from(usedPairIndices);
+                        pairIndex = allUsedIndices[Math.floor(Math.random() * allUsedIndices.length)];
+                    } else {
+                        pairIndex = usedIndicesArray[Math.floor(Math.random() * usedIndicesArray.length)];
+                    }
                 }
+
+                // Track this pair as used by an impostor
+                impostorUsedPairs.add(pairIndex);
 
                 gameState.crewmates.push({
                     id: crewmateId, phrase: shuffledPairs[pairIndex].impostor,
@@ -227,8 +240,13 @@
 
             updateDisplay();
 
-            // Start the first emergency meeting after a brief delay
-            setTimeout(startFirstEmergencyMeeting, 1000);
+            // Show the emergency button to start the game
+            document.getElementById('voteButtons').innerHTML = `
+                <br><button class="emergency-meeting-btn" onclick="startFirstEmergencyMeeting()">
+                    <img src="Emergency_button.png" alt="Emergency Meeting Button">
+                </button>
+                <p>Appuyez sur le bouton d'urgence pour commencer !</p>
+            `;
         }
 
         function startFirstEmergencyMeeting() {
