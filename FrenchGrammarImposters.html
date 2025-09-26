@@ -495,9 +495,6 @@
             const voteButtons = document.getElementById('voteButtons');
 
             if (aliveImpostors === 0) {
-                // Play victory sound
-                playVictorySound();
-
                 // Display victory message in vote buttons area, preserving the feedback message above
                 voteButtons.innerHTML = `
                     <br><div class="victory-message">
@@ -506,9 +503,12 @@
                         <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
                     </div>
                 `;
+
+                // Play victory sound when victory message is displayed
+                playVictorySound();
                 gameState.gameOver = true;
             } else if (aliveImpostors >= aliveInnocents) {
-                // Play impostor victory sound
+                // Play impostor victory sound when Game Over is displayed
                 playImpostorVictorySound();
 
                 const voteTitle = document.querySelector('.vote-title');
@@ -558,7 +558,7 @@
         function playImpostorVictorySound() {
             // Try to play the imposter-victory.mp3 file
             const audio = new Audio('imposter-victory.mp3');
-            audio.volume = 0.3;
+            audio.volume = 0.1;
             audio.play().catch(error => {
                 console.log('Could not play impostor victory sound:', error);
             });
