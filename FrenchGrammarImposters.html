@@ -351,32 +351,16 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             document.querySelector('.vote-title').innerHTML = '📊 Résultats du vote';
 
-            // Show the standard voting message immediately with Next button
-            document.getElementById('voteInstructions').innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
+            // Clear vote buttons during reveal
+            document.getElementById('voteButtons').innerHTML = '';
 
-            // Show the Next button with stats
-            const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
-            const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
-
-            document.getElementById('voteButtons').innerHTML = `
-                <br><button class="emergency-meeting-btn" onclick="revealVotingResults(${votedCrewmate.id})"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
-                <br><br>
-                <div class="game-stats">
-                    <div class="stat">Imposteurs: <span id="impostorsLeft">${aliveImpostors}</span></div>
-                    <div class="stat">Coéquipiers: <span id="crewmatesLeft">${aliveInnocents}</span></div>
-                    <div class="stat">Manche: <span id="round">${gameState.round}</span></div>
-                </div>
-            `;
-        }
-
-        function revealVotingResults(crewmateId) {
-            const votedCrewmate = gameState.crewmates[crewmateId];
-
+            // Start the suspenseful text reveal immediately
             let revealText = votedCrewmate.isImpostor
                 ? `"${votedCrewmate.phrase}" utilise la grammaire anglaise...<br>Le français correct est : "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} était un imposteur.`
                 : `"${votedCrewmate.phrase}" utilise les règles de grammaire française...<br>${votedCrewmate.name} n'était pas un imposteur.`;
 
             revealTextWithSync(document.getElementById('voteInstructions'), revealText, () => {
+                // After reveal completes, update game state and show Next button
                 if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
                 gameState.round++;
                 gameState.currentDeadCrewmate = -1;
@@ -384,12 +368,12 @@
                 gameState.votingPhase = 'between_rounds';
                 gameState.showingResults = true;  // Set flag to preserve emergency button
 
-                // Update the stats with actual values and make the button call startEmergencyMeeting
+                // Show the Next button with updated stats
                 const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
                 const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
 
                 document.getElementById('voteButtons').innerHTML = `
-                    <br><button class="emergency-meeting-btn" onclick="startEmergencyMeeting()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
+                    <br><button class="emergency-meeting-btn" onclick="proceedToNextRound()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
                     <br><br>
                     <div class="game-stats">
                         <div class="stat">Imposteurs: <span id="impostorsLeft">${aliveImpostors}</span></div>
@@ -399,6 +383,13 @@
                 `;
                 updateDisplay();
             });
+        }
+
+
+        function proceedToNextRound() {
+            // Kill next crewmate and start emergency meeting
+            killNextCrewmate();
+            startEmergencyMeeting();
         }
 
         function killNextCrewmate() {
@@ -437,8 +428,7 @@
             gameState.votingPhase = 'emergency_meeting';
             gameState.showingResults = false;  // Reset flag when starting new meeting
 
-            // Kill next crewmate and start new round
-            killNextCrewmate();
+            // Set up emergency meeting display (killing is now done in proceedToNextRound)
             document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
             document.getElementById('voteButtons').innerHTML = '<p>Cliquez sur le bouton sous chaque personnage pour voter pour l\'éliminer!</p>';
             updateDisplay();
