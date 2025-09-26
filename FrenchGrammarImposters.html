@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1 class="game-title">French Grammar Impostors</h1>
-    <div class="version">Version 3.0</div>
+    <div class="version">Version 3.1</div>
     
     <div class="voting-area">
         <div class="vote-title">🚨 Réunion d'urgence! 🚨</div>
@@ -239,6 +239,8 @@
                 victim.alive = false;
                 victim.deathPhrase = getRandomDeathPhrase('violent');
                 gameState.currentDeadCrewmate = victim.id;
+                // Clear any previous ejected crewmate when starting the game
+                gameState.currentEjectedCrewmate = -1;
 
                 // Show the emergency meeting with dead crewmate info
                 document.querySelector('.vote-title').innerHTML = '🚨 Réunion d\'urgence! 🚨';
@@ -342,7 +344,11 @@
             const votedCrewmate = gameState.crewmates[crewmateId];
             votedCrewmate.ejected = true;
             votedCrewmate.deathPhrase = getRandomDeathPhrase(votedCrewmate.isImpostor ? 'impostor_ejected' : 'innocent_ejected');
+            
+            // Clear the current dead crewmate and set the current ejected crewmate
+            gameState.currentDeadCrewmate = -1;
             gameState.currentEjectedCrewmate = crewmateId;
+            
             updateDisplay();
             startSuspensefulReveal(votedCrewmate);
         }
@@ -363,8 +369,7 @@
                 // After reveal completes, update game state and show Next button
                 if (votedCrewmate.isImpostor) gameState.impostors = gameState.impostors.filter(id => id !== votedCrewmate.id);
                 gameState.round++;
-                gameState.currentDeadCrewmate = -1;
-                gameState.currentEjectedCrewmate = -1;
+                // Don't reset currentEjectedCrewmate here - keep it visible
                 gameState.votingPhase = 'between_rounds';
                 gameState.showingResults = true;  // Set flag to preserve emergency button
 
@@ -398,6 +403,9 @@
                 const victim = aliveInnocents[Math.floor(Math.random() * aliveInnocents.length)];
                 victim.alive = false;
                 victim.deathPhrase = getRandomDeathPhrase('violent');
+                
+                // Clear the previous ejected crewmate and set the new dead crewmate
+                gameState.currentEjectedCrewmate = -1;
                 gameState.currentDeadCrewmate = victim.id;
             }
         }
@@ -437,7 +445,7 @@
         function playEmergencyMeetingSound() {
             // Try to play the EmergencyMeetingSound.mp3 file
             const audio = new Audio('EmergencyMeetingSound.mp3');
-            audio.volume = 0.5;
+            audio.volume = 0.1;
             audio.play().catch(error => {
                 console.log('Could not play emergency meeting sound:', error);
             });
@@ -449,4 +457,4 @@
     </script>
 </body>
 </html>
-<!-- Streamlined from 733 lines to 297 lines on 2025-09-25 -->
+<!-- Streamlined from 733 lines to 301 lines on 2025-09-25 -->
