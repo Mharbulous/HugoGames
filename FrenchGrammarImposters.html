@@ -154,7 +154,14 @@
             let currentTime = 0;
             for (let i = 0; i < text.length; i++) {
                 charTimings.push(currentTime);
-                currentTime += (i >= 2 && text[i] === '.' && text[i-1] === '.' && text[i-2] === '.' && i < text.length - 1) ? 1200 : 60;
+                // Check for unpredictable pause marker (...)
+                if (i >= 2 && text[i] === '.' && text[i-1] === '.' && text[i-2] === '.' && i < text.length - 1) {
+                    // Generate unpredictable pause: 1.0 to 2.3 seconds (1000 + random * 1300 ms)
+                    const unpredictablePause = 1000 + (Math.random() * 1300);
+                    currentTime += unpredictablePause;
+                } else {
+                    currentTime += 60;
+                }
             }
             if (audioContext) {
                 const startTime = audioContext.currentTime + 0.1;
@@ -165,7 +172,10 @@
                 if (!startTimestamp) startTimestamp = timestamp;
                 const elapsed = timestamp - startTimestamp;
                 while (currentIndex < text.length && elapsed >= charTimings[currentIndex]) {
-                    textSpan.innerHTML = text.substring(0, ++currentIndex);
+                    currentIndex++;
+                    // Filter out ... pause markers from displayed text
+                    let displayText = text.substring(0, currentIndex).replace(/\.\.\./g, '');
+                    textSpan.innerHTML = displayText;
                 }
                 if (currentIndex < text.length) requestAnimationFrame(animate);
                 else { gameState.isRevealing = false; if (onComplete) onComplete(); }
@@ -389,7 +399,10 @@
         }
 
         function startSuspensefulReveal(votedCrewmate) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Delay scroll to ensure layout updates complete first
+            requestAnimationFrame(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
             document.querySelector('.vote-title').innerHTML = '📊 Résultats du vote';
 
             // Clear vote buttons during reveal
@@ -397,8 +410,8 @@
 
             // Start the suspenseful text reveal immediately
             let revealText = votedCrewmate.isImpostor
-                ? `"${votedCrewmate.phrase}" utilise la grammaire anglaise...<br>Le français correct est : "${votedCrewmate.correctPhrase}"...<br>${votedCrewmate.name} était un imposteur.`
-                : `"${votedCrewmate.phrase}" utilise les règles de grammaire française...<br>${votedCrewmate.name} n'était pas un imposteur.`;
+                ? `Le français correct est : "${votedCrewmate.correctPhrase}"...<br>"${votedCrewmate.phrase}" utilise la grammaire anglaise. ...<br>${votedCrewmate.name} était un imposteur.`
+                : `Le français correct est : "${votedCrewmate.phrase}"...<br>${votedCrewmate.name} n'était pas un imposteur.`;
 
             revealTextWithSync(document.getElementById('voteInstructions'), revealText, () => {
                 // After reveal completes, update game state and show Next button
