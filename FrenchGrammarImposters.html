@@ -248,6 +248,19 @@
                 gameState.impostors.push(crewmateId);
             }
 
+            // Shuffle the crewmates array to randomize impostor placement
+            gameState.crewmates.sort(() => Math.random() - 0.5);
+
+            // Reassign sequential IDs to maintain proper indexing for voting system
+            gameState.crewmates.forEach((crewmate, index) => {
+                crewmate.id = index;
+            });
+
+            // Update impostor IDs in the impostors array to match new positions
+            gameState.impostors = gameState.crewmates
+                .map((crewmate, index) => crewmate.isImpostor ? index : -1)
+                .filter(id => id !== -1);
+
             updateDisplay();
 
             // Show the emergency button to start the game
@@ -410,8 +423,8 @@
 
             // Start the suspenseful text reveal immediately
             let revealText = votedCrewmate.isImpostor
-                ? `"${votedCrewmate.correctPhrase}" utilise la grammaire française...<br>"${votedCrewmate.phrase}" utilise la grammaire anglaise...<br>${votedCrewmate.name} était un imposteur.`
-                : `"${votedCrewmate.phrase}" utilise la grammaire française...<br>${votedCrewmate.name} n'était pas un imposteur.`;
+                ? `"${votedCrewmate.correctPhrase}" utilise la grammaire française. ...<br>"${votedCrewmate.phrase}" utilise la grammaire anglaise. ...<br>${votedCrewmate.name} était un imposteur.`
+                : `"${votedCrewmate.phrase}" utilise la grammaire française. ...<br>${votedCrewmate.name} n'était pas un imposteur.`;
 
             revealTextWithSync(document.getElementById('voteInstructions'), revealText, () => {
                 // After reveal completes, update game state and show Next button
