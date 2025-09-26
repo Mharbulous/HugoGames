@@ -474,14 +474,21 @@
         function checkGameEnd() {
             const aliveImpostors = gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).length;
             const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
-            const voteTitle = document.querySelector('.vote-title');
-            const voteInstructions = document.getElementById('voteInstructions');
-            
+            const voteButtons = document.getElementById('voteButtons');
+
             if (aliveImpostors === 0) {
-                voteTitle.innerHTML = '🎉 Victory!';
-                voteInstructions.innerHTML = 'Vous avez sauvé la langue française des imposteurs anglais !<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>';
+                // Display victory message in vote buttons area, preserving the feedback message above
+                voteButtons.innerHTML = `
+                    <br><div class="victory-message">
+                        <h2 style="color: #4ecdc4; margin: 0;">🎉 Victory!</h2>
+                        <p style="color: #fff; margin: 10px 0;">Vous avez sauvé la langue française des imposteurs anglais !</p>
+                        <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
+                    </div>
+                `;
                 gameState.gameOver = true;
             } else if (aliveImpostors >= aliveInnocents) {
+                const voteTitle = document.querySelector('.vote-title');
+                const voteInstructions = document.getElementById('voteInstructions');
                 voteTitle.innerHTML = '💀 Game Over!';
                 voteInstructions.innerHTML = `The grammar impostors have taken over! The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>`;
                 gameState.gameOver = true;
