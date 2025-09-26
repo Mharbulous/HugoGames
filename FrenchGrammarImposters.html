@@ -175,7 +175,7 @@
 
         function initializeGame() {
             gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'game_start', hasVoted: false, showingResults: false };
-            document.querySelector('.vote-title').innerHTML = 'French Grammar Impostors';
+            document.querySelector('.vote-title').innerHTML = '';
             document.getElementById('voteInstructions').innerHTML = 'Les imposteurs tentent de détruire la langue française avec la grammaire anglaise.<br><br>Éliminez les imposteurs. Vive l\'Alliance Française !';
             const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
             const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
