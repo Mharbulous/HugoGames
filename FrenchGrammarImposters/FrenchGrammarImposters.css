@@ -132,7 +132,7 @@ body::before {
     color: #fff;
     border-radius: 20px !important;
     box-shadow: inset 0 0 0 2px #fff;
-    border: none;
+    border: none !important;
     outline: none;
 }
 
@@ -151,6 +151,7 @@ body::before {
     color: #ccc;
     font-style: italic;
 }
+
 
 /* Hugo's submit button positioned below speech bubble */
 .hugo-submit-btn {
