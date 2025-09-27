@@ -18,6 +18,10 @@ function updateDisplay() {
                 // This is the most recently killed crewmate - show death phrase
                 speechContent = c.deathPhrase || c.phrase;
                 isRecentlyDead = true;
+            } else if (gameState.gameOver && aliveImpostors >= aliveInnocents && !c.isImpostor) {
+                // Impostor victory scenario - show death phrase for all killed innocent crewmates
+                speechContent = c.deathPhrase || c.phrase;
+                isRecentlyDead = true;
             } else {
                 // This is an old dead crewmate - speech will be hidden by CSS
                 speechContent = c.phrase;
@@ -47,6 +51,9 @@ function updateDisplay() {
             svgContent = crewmateSVGs.ejected;
         } else if (!c.alive && c.id === gameState.currentDeadCrewmate) {
             // Recently killed crewmate (most recent victim)
+            svgContent = crewmateSVGs.killed;
+        } else if (!c.alive && gameState.gameOver && aliveImpostors >= aliveInnocents && !c.isImpostor) {
+            // Impostor victory scenario - show killed innocent crewmates as fresh corpses
             svgContent = crewmateSVGs.killed;
         } else if (!c.alive) {
             // Old corpses (dead but not the current victim)

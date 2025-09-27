@@ -203,13 +203,23 @@ function checkGameEnd() {
             gameState.impostorVictoryPlayed = true;
         }
 
+        // Kill all surviving innocent crewmates when impostors win
+        const survivingInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected);
+        survivingInnocents.forEach(crewmate => {
+            crewmate.alive = false;
+            crewmate.deathPhrase = getRandomDeathPhrase('violent');
+        });
+
+        // Clear currentDeadCrewmate since multiple crewmates die simultaneously
+        gameState.currentDeadCrewmate = -1;
+
         const voteTitle = document.querySelector('.vote-title');
         const voteInstructions = document.getElementById('voteInstructions');
         voteTitle.innerHTML = '💀 Game Over!';
         voteInstructions.innerHTML = `The grammar impostors have taken over! The remaining impostors were: ${gameState.crewmates.filter(c => c.isImpostor && c.alive && !c.ejected).map(c => c.name).join(', ')}<br><br><button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>`;
         gameState.gameOver = true;
 
-        // Update display to reveal imposters with imposter.svg
+        // Update display to reveal imposters with imposter.svg and show killed crewmates
         updateDisplay();
     }
 }
