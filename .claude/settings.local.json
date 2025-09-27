@@ -7,7 +7,8 @@
       "WebFetch(domain:among-us.fandom.com)",
       "Bash(start PlayAsImpostor.html)",
       "Read(//c/Users/Brahm/OneDrive - Logica Law/Pictures/Screenshots/**)",
-      "Bash(start FrenchGrammarImposters/PlayAsImpostor.html)"
+      "Bash(start FrenchGrammarImposters/PlayAsImpostor.html)",
+      "Bash(node -e \"\n// Load the phrase analyzer\nconst fs = require(''fs'');\nconst analyzerCode = fs.readFileSync(''FrenchGrammarImposters/phrase-analyzer.js'', ''utf8'');\neval(analyzerCode);\n\n// Test the problematic phrase\nconst submission = ''Sur lundi, j\\''ai un match de soccer.'';\nconst correct = ''Lundi, j\\''ai un match de soccer.'';\n\nconsole.log(''=== DEBUGGING PHRASE ANALYSIS ==='');\nconsole.log(''Submission:'', submission);\nconsole.log(''Correct:'', correct);\nconsole.log();\n\n// Parse both phrases\nconst subParsed = parsePhrase(submission);\nconst corrParsed = parsePhrase(correct);\n\nconsole.log(''Submission parsed:'', JSON.stringify(subParsed, null, 2));\nconsole.log(''Correct parsed:'', JSON.stringify(corrParsed, null, 2));\nconsole.log();\n\n// Run full analysis\nconst analysis = analyzePhraseComparison(submission, correct);\nconsole.log(''Analysis result:'', JSON.stringify(analysis, null, 2));\nconsole.log();\n\n// Generate HTML feedback\nconst html = createHighlightedFeedback(submission, correct);\nconsole.log(''HTML output:'', html);\n\")"
     ],
     "deny": [],
     "ask": []
