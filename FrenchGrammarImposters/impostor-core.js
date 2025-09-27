@@ -431,19 +431,7 @@ function calculateVotingResults() {
     }
 }
 
-// Calculate phrase accuracy (character-by-character)
-function calculatePhraseAccuracy(submission, correct) {
-    let matches = 0;
-    const minLength = Math.min(submission.length, correct.length);
-
-    for (let i = 0; i < minLength; i++) {
-        if (submission[i] === correct[i]) {
-            matches++;
-        }
-    }
-
-    return matches;
-}
+// Note: Character comparison functions moved to phrase-analyzer.js
 
 // Vote out character
 function voteOutCharacter() {

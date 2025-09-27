@@ -85,7 +85,13 @@ function updateCharactersDisplay() {
         } else if (isHugo) {
             // Hugo gets normal speech bubble during other phases (like emergency_meeting)
             speechBubbleClass = 'speech-bubble';
-            // speechContent already set to character.phrase above
+            // Use Hugo's submission with highlighted feedback if available, otherwise fallback to character.phrase
+            if (impostorGameState.hugoSubmission && impostorGameState.correctPhrase) {
+                // Create highlighted feedback showing correct/incorrect characters
+                speechContent = createHighlightedFeedback(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
+            } else if (impostorGameState.hugoSubmission) {
+                speechContent = impostorGameState.hugoSubmission;
+            }
         }
 
         // Determine which SVG to use based on timing and game state

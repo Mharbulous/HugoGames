@@ -6,7 +6,8 @@
       "WebSearch",
       "WebFetch(domain:among-us.fandom.com)",
       "Bash(start PlayAsImpostor.html)",
-      "Read(//c/Users/Brahm/OneDrive - Logica Law/Pictures/Screenshots/**)"
+      "Read(//c/Users/Brahm/OneDrive - Logica Law/Pictures/Screenshots/**)",
+      "Bash(start FrenchGrammarImposters/PlayAsImpostor.html)"
     ],
     "deny": [],
     "ask": []
