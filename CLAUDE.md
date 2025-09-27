@@ -4,52 +4,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HugoGames is a collection of educational French language learning games hosted as static HTML files. The project is designed to help users practice French grammar through interactive, gamified experiences.
+This is a collection of educational browser games focused on French language learning. The main game is "French Grammar Impostors", an Among Us-inspired game where players identify grammatical mistakes in French phrases.
 
 ## Project Structure
 
-- `index.html` - Main landing page that serves as a game directory
-- `FrenchGrammarImposters.html` - Among Us-inspired game for identifying French grammar mistakes
-- `.github/workflows/deploy.yml` - GitHub Actions workflow for automatic deployment to GitHub Pages
+- `index.html` - Landing page listing all available games
+- `FrenchGrammarImposters/` - Main game directory containing:
+  - `PlayAsCrew.html` - Game entry point (referenced from index.html)
+  - `game-core.js` - Core game logic and state management
+  - `game-data.js` - Game content (phrase pairs, character data)
+  - `game-ui.js` - UI rendering and interaction handling
+  - `audio-engine.js` - Sound effects and audio management
+  - `svg-assets.js` - SVG graphics and visual assets
+  - `init.js` - Game initialization and event setup
+  - `FrenchGrammarImposters.css` - Game styling
+  - Audio/image assets (.mp3, .svg, .png, .jpg files)
 
-## Architecture
+## Development Commands
 
-This is a static site project with no build process or dependencies. Each game is implemented as a self-contained HTML file with embedded CSS and JavaScript.
+This is a static HTML/JavaScript project with no build system. To develop:
 
-### Game Architecture
+1. **Run locally**: Open `index.html` in a web browser or use a local web server:
+   ```bash
+   python -m http.server 8000
+   # Then visit http://localhost:8000
+   ```
 
-Games follow a pattern of:
-- Embedded CSS using Among Us-inspired visual themes (dark backgrounds, bright colors)
-- Vanilla JavaScript for game logic and state management
-- Web Audio API for sound effects
-- No external dependencies or frameworks
+2. **Test the game**: Navigate to "French Grammar Impostors" from the main page
 
-### Key Technical Features
+## Architecture Notes
 
-- **Audio System**: Custom Web Audio API implementation for synchronized sound effects during text reveals
-- **Animation System**: RequestAnimationFrame-based text animation with typewriter effects
-- **Game State Management**: Object-based state tracking for game progression
-- **Responsive Design**: CSS Grid and Flexbox for responsive layouts
+### Game Module System
+The French Grammar Impostors game uses a modular JavaScript architecture loaded in dependency order:
+1. `game-data.js` - Static game data and constants
+2. `svg-assets.js` - Visual assets and graphics
+3. `audio-engine.js` - Audio system initialization
+4. `game-core.js` - Game state and logic
+5. `game-ui.js` - DOM manipulation and rendering
+6. `init.js` - Game startup and event binding
 
-## Deployment
+### Game Mechanics
+- Educational game teaching French grammar through gameplay
+- Players vote to eliminate "impostors" who use incorrect French grammar
+- Game state managed through a central `gameState` object
+- Audio feedback for game events (emergency meetings, victories, etc.)
+- SVG-based character graphics with dynamic coloring
 
-The project automatically deploys to GitHub Pages via GitHub Actions on pushes to the `master` branch. The deployment workflow:
-1. Uploads all files as static assets
-2. Deploys directly to GitHub Pages without any build process
-3. Serves files directly from the repository root
-
-## Development Notes
-
-- All games are self-contained HTML files - no shared dependencies
-- French language content uses proper Unicode characters and accents
-- Color schemes follow Among Us game aesthetics (#1a1a2e, #16213e, #ff6b6b, #4ecdc4)
-- Games include educational explanations for incorrect grammar patterns
-- No package.json, build tools, or dependency management required
-
-## Game Content Structure
-
-French Grammar Impostors game includes:
-- Paired correct/incorrect French phrases demonstrating common grammar mistakes
-- Standalone incorrect phrases using English grammar with French vocabulary
-- Educational explanations for each grammar error
-- Progressive difficulty through multiple rounds
+### File Dependencies
+- The main `index.html` links to `FrenchGrammarImposters/PlayAsCrew.html` (note: different from the main game file)
+- Game modules must be loaded in the specific order defined in `PlayAsCrew.html`
+- CSS styling is centralized in `FrenchGrammarImposters.css`
