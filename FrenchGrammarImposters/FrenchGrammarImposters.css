@@ -126,6 +126,101 @@ body::before {
     z-index: 10;
 }
 
+/* Hugo's special black speech bubble */
+.hugo-speech-bubble {
+    background: #000 !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+    padding: 15px 20px !important;
+    min-height: 120px;
+}
+
+.hugo-speech-bubble::after {
+    border-bottom-color: #fff !important;
+}
+
+/* Hugo's textarea styling */
+.hugo-textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px;
+    border: 1px solid #fff;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 14px;
+    resize: vertical;
+    font-family: Arial, sans-serif;
+    margin-bottom: 10px;
+}
+
+.hugo-textarea:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 5px rgba(68, 255, 247, 0.3);
+}
+
+/* Hugo's accent help */
+.hugo-accent-help {
+    font-size: 0.8em;
+    color: #ccc;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.hugo-accent-help span {
+    margin-right: 10px;
+    font-family: monospace;
+}
+
+/* Hugo's submit button positioned below speech bubble */
+.hugo-submit-btn {
+    width: 100%;
+    max-width: 200px;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #4ecdc4, #44FFF7);
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+    margin-top: 10px;
+}
+
+.hugo-submit-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Accent Help Card */
+.accent-help-card {
+    background: rgba(26, 26, 46, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 20px auto;
+    max-width: 500px;
+    border: 2px solid #4ecdc4;
+    text-align: center;
+}
+
+.accent-help-card .accent-help-title {
+    color: #44FFF7;
+    font-size: 1em;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.accent-help-card .accent-patterns {
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.accent-help-card .accent-patterns span {
+    margin-right: 15px;
+    font-family: monospace;
+}
+
 .crewmate.dead:not(.recently-dead) .speech-bubble,
 .crewmate.ejected:not(.recently-dead) .speech-bubble {
     opacity: 0 !important;

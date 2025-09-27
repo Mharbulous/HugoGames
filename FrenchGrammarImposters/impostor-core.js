@@ -67,28 +67,15 @@ function initializeImpostorGame() {
     const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
     const shuffledCrewmateData = [...crewmateData].sort(() => Math.random() - 0.5);
 
-    // Create 7 crewmates (AI-controlled)
-    for (let i = 0; i < impostorConfig.crewmates; i++) {
-        impostorGameState.characters.push({
-            id: i,
-            name: shuffledCrewmateData[i].name,
-            color: shuffledCrewmateData[i].color,
-            phrase: shuffledPairs[i].correct,
-            isImpostor: false,
-            isHugo: false,
-            alive: true,
-            ejected: false,
-            deathPhrase: ""
-        });
-        impostorGameState.crewmates.push(i);
-    }
+    // Select random color for Hugo first
+    const hugoColorIndex = Math.floor(Math.random() * shuffledCrewmateData.length);
+    const hugoColor = shuffledCrewmateData[hugoColorIndex];
 
-    // Create Hugo (player impostor)
-    const hugoIndex = impostorConfig.crewmates;
+    // Create Hugo (player impostor) - always first character (id: 0)
     impostorGameState.characters.push({
-        id: hugoIndex,
+        id: 0,
         name: impostorConfig.hugo.name,
-        color: impostorConfig.hugo.color,
+        color: hugoColor.color,
         phrase: "", // Will be set dynamically
         isImpostor: true,
         isHugo: true,
@@ -96,20 +83,49 @@ function initializeImpostorGame() {
         ejected: false,
         deathPhrase: ""
     });
-    impostorGameState.impostors.push(hugoIndex);
-    impostorGameState.hugoId = hugoIndex;
+    impostorGameState.impostors.push(0);
+    impostorGameState.hugoId = 0;
+
+    // Create 7 crewmates (AI-controlled) - skip Hugo's color
+    let crewmateIndex = 0;
+    for (let i = 0; i < impostorConfig.crewmates; i++) {
+        // Skip the color already assigned to Hugo
+        if (crewmateIndex === hugoColorIndex) {
+            crewmateIndex++;
+        }
+
+        impostorGameState.characters.push({
+            id: i + 1, // Start from id 1 since Hugo is 0
+            name: shuffledCrewmateData[crewmateIndex].name,
+            color: shuffledCrewmateData[crewmateIndex].color,
+            phrase: shuffledPairs[i].correct,
+            isImpostor: false,
+            isHugo: false,
+            alive: true,
+            ejected: false,
+            deathPhrase: ""
+        });
+        impostorGameState.crewmates.push(i + 1);
+        crewmateIndex++;
+    }
 
     // Create 4 AI impostors
     for (let i = 1; i < impostorConfig.impostors; i++) {
-        const characterIndex = impostorConfig.crewmates + i;
+        const characterIndex = impostorConfig.crewmates + i; // This will be 8, 9, 10, 11
         const pairIndex = (impostorConfig.crewmates - 1 + i) < shuffledPairs.length ?
                           (impostorConfig.crewmates - 1 + i) :
                           Math.floor(Math.random() * shuffledPairs.length);
 
+        // Skip the color already assigned to Hugo and crewmates
+        let colorIndex = crewmateIndex;
+        if (colorIndex >= shuffledCrewmateData.length) {
+            colorIndex = Math.floor(Math.random() * shuffledCrewmateData.length);
+        }
+
         impostorGameState.characters.push({
             id: characterIndex,
-            name: shuffledCrewmateData[characterIndex].name,
-            color: shuffledCrewmateData[characterIndex].color,
+            name: shuffledCrewmateData[colorIndex].name,
+            color: shuffledCrewmateData[colorIndex].color,
             phrase: shuffledPairs[pairIndex].impostor,
             correctPhrase: shuffledPairs[pairIndex].correct,
             isImpostor: true,
@@ -119,32 +135,18 @@ function initializeImpostorGame() {
             deathPhrase: ""
         });
         impostorGameState.impostors.push(characterIndex);
+        crewmateIndex++;
     }
 
-    // Shuffle characters for display
-    impostorGameState.characters.sort(() => Math.random() - 0.5);
+    // Shuffle non-Hugo characters for display (Hugo stays first)
+    const hugoCharacter = impostorGameState.characters[0]; // Hugo is always at index 0
+    const otherCharacters = impostorGameState.characters.slice(1); // All characters except Hugo
 
-    // Reassign sequential IDs after shuffling
-    impostorGameState.characters.forEach((character, index) => {
-        const oldId = character.id;
-        character.id = index;
+    // Shuffle only the non-Hugo characters
+    otherCharacters.sort(() => Math.random() - 0.5);
 
-        // Update references in impostors and crewmates arrays
-        if (character.isImpostor) {
-            const impostorIndex = impostorGameState.impostors.indexOf(oldId);
-            if (impostorIndex !== -1) {
-                impostorGameState.impostors[impostorIndex] = index;
-            }
-            if (character.isHugo) {
-                impostorGameState.hugoId = index;
-            }
-        } else {
-            const crewmateIndex = impostorGameState.crewmates.indexOf(oldId);
-            if (crewmateIndex !== -1) {
-                impostorGameState.crewmates[crewmateIndex] = index;
-            }
-        }
-    });
+    // Rebuild characters array with Hugo first, then shuffled others
+    impostorGameState.characters = [hugoCharacter, ...otherCharacters];
 
     // Start task progress timer
     startTaskProgressTimer();

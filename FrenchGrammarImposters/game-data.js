@@ -121,7 +121,6 @@ const impostorConfig = {
     killWindowRandom: 20, // additional random seconds
     hugo: {
         name: 'Hugo',
-        color: '#F5F5F5', // Near-white background
         isPlayer: true
     }
 };

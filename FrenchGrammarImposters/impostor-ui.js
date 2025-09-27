@@ -8,6 +8,13 @@ function updateImpostorDisplay() {
     updateGamePhaseDisplay();
     updateTimerDisplay();
     scrollToHugo();
+
+    // Re-initialize accent input after character display updates (Hugo's textarea may have been recreated)
+    if (impostorGameState.gamePhase === 'phrase_correction') {
+        setTimeout(() => {
+            setupAccentInput();
+        }, 100);
+    }
 }
 
 // Update task progress bar
@@ -40,7 +47,9 @@ function updateCharactersDisplay() {
     crewmatesArea.innerHTML = impostorGameState.characters.map(character => {
         // Determine speech bubble content and styling (matching crew mode logic)
         let speechContent = character.phrase;
+        let speechBubbleClass = 'speech-bubble';
         let isRecentlyDead = false;
+        let isHugo = character.id === impostorGameState.hugoId;
 
         if (!character.alive && !character.ejected) {
             // This character is dead (killed by impostor)
@@ -68,13 +77,21 @@ function updateCharactersDisplay() {
             }
         }
 
+        // Special handling for Hugo's speech bubble during phrase correction
+        if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
+            speechBubbleClass = 'speech-bubble hugo-speech-bubble';
+            speechContent = `
+                <textarea class="hugo-textarea" id="phraseInput" placeholder="Tapez la phrase corrigée ici..." spellcheck="false">${impostorGameState.currentPhrase || ''}</textarea>
+            `;
+        }
+
         // Determine which SVG to use based on timing and game state
         let svgContent;
-        if (character.isImpostor && (impostorGameState.gameOver || impostorGameState.gamePhase === 'emergency_meeting')) {
-            // Show venting.svg for impostors during emergency meetings or game over
-            svgContent = crewmateSVGs.imposter;
+        if (character.isImpostor && character.alive && !character.ejected) {
+            // Show venting.svg for alive impostors (player can see who impostors are in impostor mode)
+            svgContent = crewmateSVGs.venting;
         } else if (character.alive && !character.ejected) {
-            // Alive characters
+            // Alive crewmates
             svgContent = crewmateSVGs.alive;
         } else if (character.ejected) {
             // Ejected characters
@@ -105,13 +122,20 @@ function updateCharactersDisplay() {
             </button>`;
         }
 
+        // Add submit button for Hugo during phrase correction
+        let hugoSubmitButton = '';
+        if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
+            hugoSubmitButton = `<button class="hugo-submit-btn" onclick="submitCorrection()">Soumettre</button>`;
+        }
+
         return `
-        <div class="crewmate ${character.alive ? 'alive' : 'dead'} ${character.ejected ? 'ejected' : ''} ${isRecentlyDead ? 'recently-dead' : ''}">
+        <div class="crewmate ${character.alive ? 'alive' : 'dead'} ${character.ejected ? 'ejected' : ''} ${isRecentlyDead ? 'recently-dead' : ''}" data-character-id="${character.id}">
             <div class="crewmate-body" style="--crewmate-color: ${character.color}; background-color: transparent;">
                 ${svgContent}
             </div>
-            <div class="speech-bubble">${speechContent}</div>
+            <div class="${speechBubbleClass}">${speechContent}</div>
             ${buttonContent}
+            ${hugoSubmitButton}
         </div>
         `;
     }).join('');
@@ -119,19 +143,20 @@ function updateCharactersDisplay() {
 
 // Update game phase specific displays
 function updateGamePhaseDisplay() {
-    const phraseCorrectionArea = document.getElementById('phraseCorrectionArea');
+    const accentHelpCard = document.getElementById('accentHelpCard');
     const killOpportunityArea = document.getElementById('killOpportunityArea');
     const voteTitle = document.getElementById('voteTitle');
     const voteInstructions = document.getElementById('voteInstructions');
     const voteButtons = document.getElementById('voteButtons');
 
     // Hide all phase-specific areas first
-    if (phraseCorrectionArea) phraseCorrectionArea.style.display = 'none';
+    if (accentHelpCard) accentHelpCard.style.display = 'none';
     if (killOpportunityArea) killOpportunityArea.style.display = 'none';
 
     switch (impostorGameState.gamePhase) {
         case 'phrase_correction':
             updatePhraseCorrectionDisplay();
+            if (accentHelpCard) accentHelpCard.style.display = 'block';
             if (voteTitle) voteTitle.innerHTML = '';
             if (voteInstructions) {
                 voteInstructions.innerHTML = `Round ${impostorGameState.round} - Vous êtes un imposteur ! Corrigez la phrase pour éviter la détection.`;
@@ -219,48 +244,20 @@ function updateGamePhaseDisplay() {
 
 // Update phrase correction display
 function updatePhraseCorrectionDisplay() {
-    const phraseCorrectionArea = document.getElementById('phraseCorrectionArea');
     const phraseInput = document.getElementById('phraseInput');
 
-    if (!phraseCorrectionArea || !phraseInput) return;
-
-    phraseCorrectionArea.style.display = 'block';
+    if (!phraseInput) return;
 
     // Set the incorrect phrase for Hugo to correct
     if (impostorGameState.currentPhrase && phraseInput.value === "") {
         phraseInput.value = impostorGameState.currentPhrase;
         phraseInput.select(); // Select all text for easy replacement
     }
-
-    // Update correction title based on last impostor mode
-    const correctionTitle = phraseCorrectionArea.querySelector('.correction-title');
-    if (correctionTitle) {
-        if (impostorGameState.lastImpostorMode) {
-            correctionTitle.textContent = 'Dernier imposteur ! Corrigez cette phrase (pas de limite de temps) :';
-        } else {
-            correctionTitle.textContent = 'Corrigez cette phrase française :';
-        }
-    }
 }
 
 // Update timer displays
 function updateTimerDisplay() {
-    const inputTimer = document.getElementById('inputTimer');
     const killTimer = document.getElementById('killTimer');
-
-    // Update input timer
-    if (inputTimer) {
-        if (impostorGameState.lastImpostorMode) {
-            inputTimer.textContent = '∞';
-            inputTimer.style.color = '#4ecdc4';
-        } else if (impostorGameState.hugoTimeLeft > 0) {
-            inputTimer.textContent = `${impostorGameState.hugoTimeLeft}s`;
-            inputTimer.style.color = impostorGameState.hugoTimeLeft <= 10 ? '#ff6b6b' : '#4ecdc4';
-        } else if (impostorGameState.hugoTimeLeft === 0) {
-            inputTimer.textContent = 'TEMPS ÉCOULÉ';
-            inputTimer.style.color = '#ff6b6b';
-        }
-    }
 
     // Update kill timer
     if (killTimer && impostorGameState.gamePhase === 'kill_opportunity') {
