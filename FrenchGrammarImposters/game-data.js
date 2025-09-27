@@ -83,3 +83,67 @@ function getRandomDeathPhrase(deathType) {
     }
     return phrases[Math.floor(Math.random() * phrases.length)];
 }
+
+// ========== IMPOSTOR MODE DATA ==========
+
+// French accent input patterns for impostor mode
+const accentInputPatterns = {
+    // Accent Aigu (é)
+    'é': {keystroke: "'e", description: "Accent Aigu"},
+    // Accent Grave (à, è, ù)
+    'à': {keystroke: "`a", description: "Accent Grave"},
+    'è': {keystroke: "`e", description: "Accent Grave"},
+    'ù': {keystroke: "`u", description: "Accent Grave"},
+    // Circumflex (â, ê, î, ô, û)
+    'â': {keystroke: "^a", description: "Circumflex"},
+    'ê': {keystroke: "^e", description: "Circumflex"},
+    'î': {keystroke: "^i", description: "Circumflex"},
+    'ô': {keystroke: "^o", description: "Circumflex"},
+    'û': {keystroke: "^u", description: "Circumflex"},
+    // Tréma/Umlaut (ë, ï, ü)
+    'ë': {keystroke: '"e', description: "Tréma"},
+    'ï': {keystroke: '"i', description: "Tréma"},
+    'ü': {keystroke: '"u', description: "Tréma"},
+    // Cédille (ç)
+    'ç': {keystroke: "'c", description: "Cédille"}
+};
+
+// Impostor mode configuration constants
+const impostorConfig = {
+    totalPlayers: 12,
+    impostors: 5,
+    crewmates: 7,
+    hugoTimeLimit: 60, // seconds
+    aiImpostorMinTime: 20, // seconds
+    aiImpostorMaxTime: 60, // seconds
+    taskProgressTotal: 180, // seconds total across all rounds
+    killWindowBase: 10, // base seconds for kill opportunity
+    killWindowRandom: 20, // additional random seconds
+    hugo: {
+        name: 'Hugo',
+        color: '#F5F5F5', // Near-white background
+        isPlayer: true
+    }
+};
+
+// Helper function to process accent input
+function processAccentInput(inputChar, previousChar) {
+    const accentMap = {
+        "'e": 'é',
+        "'c": 'ç',
+        '`a': 'à',
+        '`e': 'è',
+        '`u': 'ù',
+        '^a': 'â',
+        '^e': 'ê',
+        '^i': 'î',
+        '^o': 'ô',
+        '^u': 'û',
+        '"e': 'ë',
+        '"i': 'ï',
+        '"u': 'ü'
+    };
+
+    const combination = previousChar + inputChar;
+    return accentMap[combination] || inputChar;
+}

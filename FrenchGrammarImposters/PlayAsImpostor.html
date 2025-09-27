@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Grammar Impostors - Impostor Mode</title>
+    <link rel="stylesheet" href="FrenchGrammarImposters.css">
+</head>
+<body>
+    <h1 class="game-title">French Grammar Impostors</h1>
+    <div class="version">Version 4.0 - Mode Imposteur</div>
+
+    <!-- Task Progress Bar -->
+    <div class="task-progress-container">
+        <div class="task-progress-label">Tâches de l'équipage : <span id="taskPercentage">0%</span></div>
+        <div class="task-progress-bar">
+            <div class="task-progress-fill" id="taskProgressFill"></div>
+        </div>
+        <div class="task-warning" id="taskWarning">⚠️ Les tâches approchent de la completion !</div>
+    </div>
+
+    <!-- Phrase Correction Area -->
+    <div class="phrase-correction-area" id="phraseCorrectionArea">
+        <div class="correction-title">Corrigez cette phrase française :</div>
+        <div class="phrase-input-container">
+            <textarea id="phraseInput" placeholder="Tapez la phrase corrigée ici..." spellcheck="false"></textarea>
+            <div class="input-timer" id="inputTimer">60s</div>
+        </div>
+        <div class="accent-help">
+            <div class="accent-help-title">Aide pour les accents :</div>
+            <div class="accent-patterns">
+                <span>'e → é</span> | <span>`e → è</span> | <span>^e → ê</span> | <span>"e → ë</span> | <span>'c → ç</span>
+            </div>
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitCorrection()">Soumettre</button>
+    </div>
+
+    <!-- Kill Opportunity Area -->
+    <div class="kill-opportunity-area" id="killOpportunityArea" style="display: none;">
+        <div class="kill-title">🗡️ Opportunité d'élimination ! 🗡️</div>
+        <div class="kill-instructions">Cliquez sur un membre d'équipage pour l'éliminer !</div>
+        <div class="kill-timer" id="killTimer">15s</div>
+    </div>
+
+    <!-- Voting Area -->
+    <div class="voting-area">
+        <div class="vote-title" id="voteTitle"></div>
+        <p id="voteInstructions">Vous êtes un imposteur ! Éliminez tous les membres d'équipage avant qu'ils ne terminent leurs tâches.</p>
+        <div id="voteButtons"></div>
+    </div>
+
+    <!-- Crewmates Area -->
+    <div class="crewmates-area" id="crewmatesArea"></div>
+
+    <button class="new-game-btn" onclick="startNewImpostorGame()">Nouvelle Partie</button>
+
+    <!-- Load modules in dependency order -->
+    <script src="game-data.js"></script>
+    <script src="svg-assets.js"></script>
+    <script src="audio-engine.js"></script>
+    <script src="impostor-core.js"></script>
+    <script src="impostor-ui.js"></script>
+    <script src="impostor-init.js"></script>
+</body>
+</html>

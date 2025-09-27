@@ -4,7 +4,8 @@
       "Bash(start PlayAsCrew.html)",
       "WebFetch(domain:fr.wikipedia.org)",
       "WebSearch",
-      "WebFetch(domain:among-us.fandom.com)"
+      "WebFetch(domain:among-us.fandom.com)",
+      "Bash(start PlayAsImpostor.html)"
     ],
     "deny": [],
     "ask": []
