@@ -79,10 +79,13 @@ function updateCharactersDisplay() {
 
         // Special handling for Hugo's speech bubble during phrase correction
         if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
-            speechBubbleClass = 'speech-bubble hugo-speech-bubble';
-            speechContent = `
-                <textarea class="hugo-textarea" id="phraseInput" placeholder="Tapez la phrase corrigée ici..." spellcheck="false">${impostorGameState.currentPhrase || ''}</textarea>
-            `;
+            // Hugo gets a textarea container as his speech bubble during phrase correction
+            speechBubbleClass = '';
+            speechContent = '';
+        } else if (isHugo) {
+            // Hugo gets normal speech bubble during other phases (like emergency_meeting)
+            speechBubbleClass = 'speech-bubble';
+            // speechContent already set to character.phrase above
         }
 
         // Determine which SVG to use based on timing and game state
@@ -128,12 +131,19 @@ function updateCharactersDisplay() {
             hugoSubmitButton = `<button class="hugo-submit-btn" onclick="submitCorrection()">Soumettre</button>`;
         }
 
+        // Add Hugo's special contenteditable speech bubble during phrase correction
+        let hugoTextareaElement = '';
+        if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
+            hugoTextareaElement = `<div class="speech-bubble hugo-speech-bubble" id="phraseInput" contenteditable="true" data-placeholder="Tapez la phrase corrigée ici...">${impostorGameState.currentPhrase || ''}</div>`;
+        }
+
         return `
         <div class="crewmate ${character.alive ? 'alive' : 'dead'} ${character.ejected ? 'ejected' : ''} ${isRecentlyDead ? 'recently-dead' : ''}" data-character-id="${character.id}">
             <div class="crewmate-body" style="--crewmate-color: ${character.color}; background-color: transparent;">
                 ${svgContent}
             </div>
-            <div class="${speechBubbleClass}">${speechContent}</div>
+            ${hugoTextareaElement}
+            ${speechBubbleClass ? `<div class="${speechBubbleClass}">${speechContent}</div>` : ''}
             ${buttonContent}
             ${hugoSubmitButton}
         </div>
@@ -249,9 +259,14 @@ function updatePhraseCorrectionDisplay() {
     if (!phraseInput) return;
 
     // Set the incorrect phrase for Hugo to correct
-    if (impostorGameState.currentPhrase && phraseInput.value === "") {
-        phraseInput.value = impostorGameState.currentPhrase;
-        phraseInput.select(); // Select all text for easy replacement
+    if (impostorGameState.currentPhrase && phraseInput.textContent === "") {
+        phraseInput.textContent = impostorGameState.currentPhrase;
+        // Select all text for easy replacement
+        const range = document.createRange();
+        range.selectNodeContents(phraseInput);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
     }
 }
 
@@ -291,8 +306,9 @@ function setupAccentInput() {
     let lastChar = '';
 
     phraseInput.addEventListener('input', function(event) {
-        const currentValue = this.value;
-        const cursorPosition = this.selectionStart;
+        const currentValue = this.textContent;
+        const selection = window.getSelection();
+        const cursorPosition = selection.anchorOffset;
 
         if (currentValue.length > 0) {
             const currentChar = currentValue.charAt(cursorPosition - 1);
@@ -307,8 +323,15 @@ function setupAccentInput() {
                                    accentedChar +
                                    currentValue.substring(cursorPosition);
 
-                    this.value = newValue;
-                    this.setSelectionRange(cursorPosition - 1, cursorPosition - 1);
+                    this.textContent = newValue;
+
+                    // Restore cursor position
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.setStart(this.firstChild, cursorPosition - 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
                 }
             }
 

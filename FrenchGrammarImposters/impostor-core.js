@@ -270,7 +270,7 @@ function submitCorrection(autoSubmit = false) {
     if (impostorGameState.gamePhase !== 'phrase_correction') return;
 
     const inputField = document.getElementById('phraseInput');
-    impostorGameState.hugoSubmission = inputField ? inputField.value.trim() : "";
+    impostorGameState.hugoSubmission = inputField ? inputField.textContent.trim() : "";
 
     // Clear Hugo's timer
     if (impostorGameState.hugoTimer) {
