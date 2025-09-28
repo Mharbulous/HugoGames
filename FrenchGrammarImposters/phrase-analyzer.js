@@ -159,34 +159,120 @@ class PhraseAnalyzer {
     createHighlightedFeedback(submission, correct) {
         const analysis = this.analyzePhraseComparison(submission, correct);
         const html = [];
+        
+        // Group consecutive error segments (wrong, extra, missing) together
+        const groupedSegments = [];
+        let i = 0;
+        
+        while (i < analysis.displaySegments.length) {
+            const segment = analysis.displaySegments[i];
+            
+            // Check if this is any type of error
+            if (segment.type === this.ERROR_TYPES.WRONG || 
+                segment.type === this.ERROR_TYPES.EXTRA ||
+                segment.type === this.ERROR_TYPES.MISSING) {
+                
+                // Collect all consecutive error segments
+                const errorGroup = {
+                    wrongs: [],
+                    extras: [],
+                    missings: [],
+                    corrections: []
+                };
+                
+                while (i < analysis.displaySegments.length && 
+                       (analysis.displaySegments[i].type === this.ERROR_TYPES.WRONG ||
+                        analysis.displaySegments[i].type === this.ERROR_TYPES.EXTRA ||
+                        analysis.displaySegments[i].type === this.ERROR_TYPES.MISSING)) {
+                    
+                    const seg = analysis.displaySegments[i];
+                    
+                    if (seg.type === this.ERROR_TYPES.WRONG) {
+                        errorGroup.wrongs.push(seg.text);
+                        if (seg.correct) {
+                            errorGroup.corrections.push(seg.correct);
+                        }
+                    } else if (seg.type === this.ERROR_TYPES.EXTRA) {
+                        errorGroup.extras.push(seg.text);
+                    } else if (seg.type === this.ERROR_TYPES.MISSING) {
+                        errorGroup.missings.push(seg.text);
+                    }
+                    i++;
+                }
+                
+                groupedSegments.push({
+                    type: 'error_group',
+                    ...errorGroup
+                });
+            } else {
+                groupedSegments.push(segment);
+                i++;
+            }
+        }
+        
+        // Now render the grouped segments
         let prevWasWord = false;
         
-        for (const segment of analysis.displaySegments) {
-            // Add space between words (not before punctuation)
-            const isPunct = /^[.!?,;:]+$/.test(segment.text);
-            if (prevWasWord && !isPunct) html.push(' ');
-            
-            switch (segment.type) {
-                case this.ERROR_TYPES.CORRECT:
-                    html.push(segment.text);
-                    break;
-                case this.ERROR_TYPES.WRONG:
-                    html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${segment.text}</span>`);
-                    if (segment.correct) {
-                        const correctIsPunct = /^[.!?,;:]+$/.test(segment.correct);
-                        if (!correctIsPunct) html.push(' '); // Always add space before non-punctuation corrections
-                        html.push(`<span style="color: #131313; text-decoration: underline;">${segment.correct}</span>`);
+        for (const segment of groupedSegments) {
+            if (segment.type === 'error_group') {
+                // Add space before error group if previous was a word
+                const allStrikes = [...segment.wrongs, ...segment.extras];
+                if (prevWasWord && allStrikes.length > 0) {
+                    const firstIsPunct = /^[.!?,;:]+$/.test(allStrikes[0]);
+                    if (!firstIsPunct) html.push(' ');
+                }
+                
+                // Render all strikethroughs (wrongs and extras) first
+                let strikeCount = 0;
+                
+                // Render wrong words with strikethrough
+                for (const wrong of segment.wrongs) {
+                    if (strikeCount > 0) {
+                        const isPunct = /^[.!?,;:]+$/.test(wrong);
+                        if (!isPunct) html.push(' ');
                     }
-                    break;
-                case this.ERROR_TYPES.MISSING:
-                    html.push(`<span style="color: #131313; text-decoration: underline;">${segment.text}</span>`);
-                    break;
-                case this.ERROR_TYPES.EXTRA:
-                    html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${segment.text}</span>`);
-                    break;
+                    html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${wrong}</span>`);
+                    strikeCount++;
+                }
+                
+                // Render extra words with strikethrough
+                for (const extra of segment.extras) {
+                    if (strikeCount > 0) {
+                        const isPunct = /^[.!?,;:]+$/.test(extra);
+                        if (!isPunct) html.push(' ');
+                    }
+                    html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${extra}</span>`);
+                    strikeCount++;
+                }
+                
+                // Then render all insertions (corrections and missings)
+                for (const correct of segment.corrections) {
+                    const isPunct = /^[.!?,;:]+$/.test(correct);
+                    if (!isPunct) html.push(' ');
+                    html.push(`<span style="color: #131313; text-decoration: underline;">${correct}</span>`);
+                }
+                
+                for (const missing of segment.missings) {
+                    const isPunct = /^[.!?,;:]+$/.test(missing);
+                    if (!isPunct) html.push(' ');
+                    html.push(`<span style="color: #131313; text-decoration: underline;">${missing}</span>`);
+                }
+                
+                // Update prevWasWord
+                const allInsertions = [...segment.corrections, ...segment.missings];
+                if (allInsertions.length > 0) {
+                    prevWasWord = !/^[.!?,;:]+$/.test(allInsertions[allInsertions.length - 1]);
+                } else if (allStrikes.length > 0) {
+                    prevWasWord = !/^[.!?,;:]+$/.test(allStrikes[allStrikes.length - 1]);
+                }
+                
+            } else {
+                // Handle correct segments
+                const isPunct = segment.text && /^[.!?,;:]+$/.test(segment.text);
+                if (prevWasWord && !isPunct) html.push(' ');
+                html.push(segment.text);
+                prevWasWord = !isPunct;
             }
-            
-            prevWasWord = !isPunct;
         }
         
         return html.join('');
