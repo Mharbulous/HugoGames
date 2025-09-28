@@ -25,24 +25,107 @@ class PhraseAnalyzer {
             return this.createEmptyAnalysis();
         }
 
-        // Tokenize both phrases
+        // Get original words with punctuation for display
+        const originalSubmittedWords = (submission || '').match(/\S+/g) || [];
+        const originalCorrectWords = (correct || '').match(/\S+/g) || [];
+
+        // Phase 1: Word analysis (punctuation stripped)
         const submittedWords = this.tokenize(submission || '');
         const correctWords = this.tokenize(correct || '');
-        
+
         // Compute word-level alignment using LCS
         const alignment = this.computeAlignment(submittedWords, correctWords);
-        
-        // Build analysis from alignment
-        const analysis = this.buildAnalysis(alignment, submittedWords, correctWords);
-        
+
+        // Build analysis from alignment (pass original words for display)
+        const analysis = this.buildAnalysis(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords);
+
+        // Phase 2: Punctuation analysis
+        const submittedPunctuation = this.extractPunctuation(submission || '');
+        const correctPunctuation = this.extractPunctuation(correct || '');
+        const punctuationErrors = this.comparePunctuation(submittedPunctuation, correctPunctuation);
+
+        // Add punctuation errors to analysis (only for actual punctuation mismatches)
+        for (const error of punctuationErrors) {
+            // Skip if this is just a length difference due to missing/extra words
+            if (error.submitted === '' || error.correct === '') {
+                continue;
+            }
+
+            // Only add punctuation errors if there aren't word-level issues at the same position
+            const hasWordError = analysis.displaySegments[error.position] &&
+                                analysis.displaySegments[error.position].type !== this.ERROR_TYPES.CORRECT;
+
+            if (!hasWordError) {
+                analysis.words.errors.push({
+                    type: 'punctuation_error',
+                    submitted: error.submitted,
+                    correct: error.correct,
+                    votes: 1
+                });
+                analysis.totalVotes += 1;
+
+                // Update display segment for punctuation error
+                if (analysis.displaySegments[error.position]) {
+                    analysis.displaySegments[error.position].punctuationError = true;
+                    analysis.displaySegments[error.position].correctPunctuation = error.correct;
+                }
+            }
+        }
+
         return analysis;
     }
 
     /**
-     * Tokenize text into words, preserving French contractions
+     * Strip end punctuation from a word (preserves contractions like don't)
+     */
+    stripEndPunctuation(word) {
+        return word.replace(/[.!?]+$/, '');
+    }
+
+    /**
+     * Extract punctuation patterns from text for separate analysis
+     */
+    extractPunctuation(text) {
+        const words = text.match(/\S+/g) || [];
+        return words.map(word => {
+            const match = word.match(/[.!?]+$/);
+            return match ? match[0] : '';
+        });
+    }
+
+    /**
+     * Compare punctuation patterns and identify errors
+     */
+    comparePunctuation(submittedPunctuation, correctPunctuation) {
+        const errors = [];
+        const maxLen = Math.max(submittedPunctuation.length, correctPunctuation.length);
+
+        for (let i = 0; i < maxLen; i++) {
+            const subPunct = submittedPunctuation[i] || '';
+            const corrPunct = correctPunctuation[i] || '';
+
+            if (subPunct !== corrPunct) {
+                // Only flag as error if there's actual punctuation involved
+                if (subPunct || corrPunct) {
+                    errors.push({
+                        position: i,
+                        submitted: subPunct,
+                        correct: corrPunct,
+                        type: 'punctuation'
+                    });
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    /**
+     * Tokenize text into words, stripping end punctuation for analysis
      */
     tokenize(text) {
-        return text.match(/\S+/g) || [];
+        const words = text.match(/\S+/g) || [];
+        return words.map(word => this.stripEndPunctuation(word));
     }
 
     /**
@@ -109,7 +192,7 @@ class PhraseAnalyzer {
     /**
      * Build analysis from alignment, checking for position and character errors
      */
-    buildAnalysis(alignment, submittedWords, correctWords) {
+    buildAnalysis(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords) {
         const analysis = {
             words: { correct: [], errors: [], missing: [], extra: [] },
             totalVotes: 0,
@@ -142,7 +225,7 @@ class PhraseAnalyzer {
                     analysis.totalVotes += 1;
                     analysis.displaySegments.push({
                         type: this.ERROR_TYPES.POSITION,
-                        text: item.submitted
+                        text: originalSubmittedWords[item.subIndex] || item.submitted
                     });
                 } else {
                     // Correct word in correct position
@@ -152,7 +235,7 @@ class PhraseAnalyzer {
                     });
                     analysis.displaySegments.push({
                         type: this.ERROR_TYPES.CORRECT,
-                        text: item.submitted
+                        text: originalSubmittedWords[item.subIndex] || item.submitted
                     });
                 }
             } else if (item.type === 'missing') {
@@ -170,9 +253,11 @@ class PhraseAnalyzer {
                         const errorAnalysis = this.analyzeWordError(similarWord, item.correct);
                         analysis.words.errors.push(errorAnalysis);
                         analysis.totalVotes += errorAnalysis.votes;
+                        // Find original word with punctuation for the similar word
+                        const originalSimilarWord = this.findOriginalWordForSimilar(similarWord, originalSubmittedWords, submittedWords);
                         analysis.displaySegments.push({
                             type: errorAnalysis.type,
-                            text: similarWord,
+                            text: originalSimilarWord,
                             correct: item.correct,
                             errorPositions: errorAnalysis.errorPositions
                         });
@@ -185,7 +270,7 @@ class PhraseAnalyzer {
                         analysis.totalVotes += 2;
                         analysis.displaySegments.push({
                             type: this.ERROR_TYPES.MISSING,
-                            text: item.correct
+                            text: originalCorrectWords[item.corrIndex] || item.correct
                         });
                     }
                 }
@@ -205,13 +290,21 @@ class PhraseAnalyzer {
                     analysis.totalVotes += 1;
                     analysis.displaySegments.push({
                         type: this.ERROR_TYPES.EXTRA,
-                        text: item.submitted
+                        text: originalSubmittedWords[item.subIndex] || item.submitted
                     });
                 }
             }
         }
 
         return analysis;
+    }
+
+    /**
+     * Find the original word (with punctuation) that corresponds to a similar word
+     */
+    findOriginalWordForSimilar(similarWord, originalWords, strippedWords) {
+        const index = strippedWords.indexOf(similarWord);
+        return index >= 0 ? originalWords[index] : similarWord;
     }
 
     /**
@@ -316,7 +409,12 @@ class PhraseAnalyzer {
             
             switch (segment.type) {
                 case this.ERROR_TYPES.CORRECT:
-                    html.push(segment.text);
+                    // Check if this correct word has a punctuation error
+                    if (segment.punctuationError) {
+                        html.push(this.highlightPunctuationError(segment.text, segment.correctPunctuation));
+                    } else {
+                        html.push(segment.text);
+                    }
                     break;
                 case this.ERROR_TYPES.SINGLE_CHAR:
                     html.push(this.highlightCharacterErrors(segment.text, segment.correct, segment.errorPositions));
@@ -337,6 +435,24 @@ class PhraseAnalyzer {
         }
         
         return html.join('');
+    }
+
+    /**
+     * Highlight punctuation errors within a word
+     */
+    highlightPunctuationError(wordWithPunctuation, correctPunctuation) {
+        // Find where punctuation starts in the word
+        const match = wordWithPunctuation.match(/^(.+?)([.!?]*)$/);
+        if (!match) return wordWithPunctuation;
+
+        const [, wordPart, currentPunctuation] = match;
+
+        // Highlight the incorrect punctuation
+        if (currentPunctuation !== correctPunctuation) {
+            return `${wordPart}<span style="color: #ff6b6b;">${currentPunctuation}</span>`;
+        }
+
+        return wordWithPunctuation;
     }
 
     /**
