@@ -134,7 +134,7 @@ function updateCharactersDisplay() {
         // Add submit button for Hugo during phrase correction
         let hugoSubmitButton = '';
         if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
-            hugoSubmitButton = `<button class="hugo-submit-btn" onclick="submitCorrection()">Soumettre</button>`;
+            hugoSubmitButton = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="sabotage.svg" alt="Sabotage" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
         }
 
         // Add Hugo's special contenteditable speech bubble during phrase correction
