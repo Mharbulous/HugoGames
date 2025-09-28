@@ -1,5 +1,5 @@
-// French Grammar Impostors - Simplified Phrase Analyzer
-// All word-level errors, no character-level analysis
+// French Grammar Impostors - Streamlined Phrase Analyzer
+// Word-level analysis with proper punctuation handling
 
 class PhraseAnalyzer {
     constructor() {
@@ -11,70 +11,50 @@ class PhraseAnalyzer {
         };
     }
 
-    analyzePhraseComparison(submission, correct) {
-        if (!submission && !correct) return this.createEmptyAnalysis();
-
-        const originalSubmittedWords = (submission || '').match(/\S+/g) || [];
-        const originalCorrectWords = (correct || '').match(/\S+/g) || [];
-        const submittedWords = this.tokenize(submission || '');
-        const correctWords = this.tokenize(correct || '');
-
-        const alignment = this.computeAlignment(submittedWords, correctWords);
-        return this.buildAnalysis(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords);
-    }
-
-    stripEndPunctuation(word) {
-        return word.replace(/[.!?,;:]+$/, '');
-    }
-
     tokenize(text) {
+        if (!text) return [];
+        // Split on whitespace and keep punctuation as separate tokens
+        const tokens = [];
         const words = text.match(/\S+/g) || [];
-        return words.map(word => this.stripEndPunctuation(word));
+        
+        for (const word of words) {
+            // Check for trailing punctuation
+            const match = word.match(/^(.+?)([.!?,;:]+)$/);
+            if (match) {
+                tokens.push(match[1]); // Word without punctuation
+                tokens.push(match[2]); // Punctuation as separate token
+            } else {
+                tokens.push(word);
+            }
+        }
+        return tokens;
     }
 
-    computeAlignment(submitted, correct) {
-        const m = submitted.length;
-        const n = correct.length;
-        const lcs = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+    computeLCS(a, b) {
+        const m = a.length, n = b.length;
+        const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
         
-        // Build LCS table
         for (let i = 1; i <= m; i++) {
             for (let j = 1; j <= n; j++) {
-                if (submitted[i-1] === correct[j-1]) {
-                    lcs[i][j] = lcs[i-1][j-1] + 1;
-                } else {
-                    lcs[i][j] = Math.max(lcs[i-1][j], lcs[i][j-1]);
-                }
+                dp[i][j] = a[i-1] === b[j-1] ? 
+                    dp[i-1][j-1] + 1 : 
+                    Math.max(dp[i-1][j], dp[i][j-1]);
             }
         }
         
-        // Trace back to find alignment
+        // Backtrack to find alignment
         const alignment = [];
         let i = m, j = n;
         
         while (i > 0 || j > 0) {
-            if (i > 0 && j > 0 && submitted[i-1] === correct[j-1]) {
-                alignment.unshift({
-                    type: 'match',
-                    submitted: submitted[i-1],
-                    correct: correct[j-1],
-                    subIndex: i-1,
-                    corrIndex: j-1
-                });
+            if (i > 0 && j > 0 && a[i-1] === b[j-1]) {
+                alignment.unshift({ type: 'match', subIdx: i-1, corrIdx: j-1 });
                 i--; j--;
-            } else if (j > 0 && (i === 0 || lcs[i][j-1] >= lcs[i-1][j])) {
-                alignment.unshift({
-                    type: 'missing',
-                    correct: correct[j-1],
-                    corrIndex: j-1
-                });
+            } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+                alignment.unshift({ type: 'missing', corrIdx: j-1 });
                 j--;
             } else {
-                alignment.unshift({
-                    type: 'extra',
-                    submitted: submitted[i-1],
-                    subIndex: i-1
-                });
+                alignment.unshift({ type: 'extra', subIdx: i-1 });
                 i--;
             }
         }
@@ -82,150 +62,131 @@ class PhraseAnalyzer {
         return alignment;
     }
 
-    buildAnalysis(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords) {
+    analyzePhraseComparison(submission, correct) {
+        const subTokens = this.tokenize(submission || '');
+        const corrTokens = this.tokenize(correct || '');
+        
+        if (!subTokens.length && !corrTokens.length) {
+            return { words: { correct: [], wrong: [], missing: [], extra: [] },
+                    totalVotes: 0, displaySegments: [] };
+        }
+        
+        const alignment = this.computeLCS(subTokens, corrTokens);
         const analysis = {
             words: { correct: [], wrong: [], missing: [], extra: [] },
             totalVotes: 0,
             displaySegments: []
         };
-
-        const segments = [];
-        let i = 0;
         
+        // Process alignment to identify errors
+        let i = 0;
         while (i < alignment.length) {
-            const item = alignment[i];
+            const current = alignment[i];
             
-            if (item.type === 'match') {
-                // Correct word at correct position
-                segments.push({
+            if (current.type === 'match') {
+                analysis.displaySegments.push({
                     type: this.ERROR_TYPES.CORRECT,
-                    text: originalSubmittedWords[item.subIndex],
-                    index: item.subIndex
+                    text: subTokens[current.subIdx]
                 });
-                analysis.words.correct.push({ word: item.submitted, votes: 0 });
+                analysis.words.correct.push({ word: subTokens[current.subIdx], votes: 0 });
                 i++;
+            } else {
+                // Check if this is a substitution (wrong word) or extra/missing
+                const nextMatch = alignment.slice(i).findIndex(a => a.type === 'match');
+                const endIdx = nextMatch === -1 ? alignment.length : i + nextMatch;
                 
-            } else if (item.type === 'extra' || item.type === 'missing') {
-                // Collect consecutive extras and missings
-                const group = [];
-                while (i < alignment.length && 
-                       (alignment[i].type === 'extra' || alignment[i].type === 'missing')) {
-                    group.push(alignment[i]);
-                    i++;
+                const extras = [];
+                const missings = [];
+                
+                for (let j = i; j < endIdx; j++) {
+                    if (alignment[j].type === 'extra') {
+                        extras.push(alignment[j]);
+                    } else if (alignment[j].type === 'missing') {
+                        missings.push(alignment[j]);
+                    }
                 }
                 
-                // Process group - check if it's a substitution (wrong word) or truly extra/missing
-                const extras = group.filter(g => g.type === 'extra');
-                const missings = group.filter(g => g.type === 'missing');
+                // Pair up extras and missings as substitutions
+                const substitutions = Math.min(extras.length, missings.length);
                 
-                // Simple heuristic: if we have both extras and missings in close proximity,
-                // they're likely substitutions (wrong words)
-                const minCount = Math.min(extras.length, missings.length);
-                
-                // Process substitutions (wrong words)
-                for (let j = 0; j < minCount; j++) {
-                    segments.push({
+                for (let k = 0; k < substitutions; k++) {
+                    analysis.displaySegments.push({
                         type: this.ERROR_TYPES.WRONG,
-                        text: originalSubmittedWords[extras[j].subIndex],
-                        correct: originalCorrectWords[missings[j].corrIndex],
-                        index: extras[j].subIndex
+                        text: subTokens[extras[k].subIdx],
+                        correct: corrTokens[missings[k].corrIdx]
                     });
                     analysis.words.wrong.push({
-                        submitted: submittedWords[extras[j].subIndex],
-                        correct: correctWords[missings[j].corrIndex],
-                        votes: 2
+                        submitted: subTokens[extras[k].subIdx],
+                        correct: corrTokens[missings[k].corrIdx],
+                        votes: 1  // Fixed: 1 vote per spec
                     });
-                    analysis.totalVotes += 2;
+                    analysis.totalVotes += 1;
                 }
                 
-                // Process remaining extras
-                for (let j = minCount; j < extras.length; j++) {
-                    segments.push({
+                // Handle remaining extras
+                for (let k = substitutions; k < extras.length; k++) {
+                    analysis.displaySegments.push({
                         type: this.ERROR_TYPES.EXTRA,
-                        text: originalSubmittedWords[extras[j].subIndex],
-                        index: extras[j].subIndex
+                        text: subTokens[extras[k].subIdx]
                     });
                     analysis.words.extra.push({
-                        word: submittedWords[extras[j].subIndex],
+                        word: subTokens[extras[k].subIdx],
                         votes: 1
                     });
                     analysis.totalVotes += 1;
                 }
                 
-                // Process remaining missings
-                for (let j = minCount; j < missings.length; j++) {
-                    segments.push({
+                // Handle remaining missings
+                for (let k = substitutions; k < missings.length; k++) {
+                    analysis.displaySegments.push({
                         type: this.ERROR_TYPES.MISSING,
-                        text: originalCorrectWords[missings[j].corrIndex],
-                        index: missings[j].corrIndex + 0.5, // Place after previous word
-                        isMissing: true
+                        text: corrTokens[missings[k].corrIdx]
                     });
                     analysis.words.missing.push({
-                        word: correctWords[missings[j].corrIndex],
-                        votes: 2
+                        word: corrTokens[missings[k].corrIdx],
+                        votes: 1  // Fixed: 1 vote per spec
                     });
-                    analysis.totalVotes += 2;
+                    analysis.totalVotes += 1;
                 }
-            } else {
-                i++;
+                
+                i = endIdx;
             }
         }
         
-        // Sort segments by position
-        segments.sort((a, b) => a.index - b.index);
-        
-        // Merge consecutive missing words for cleaner display
-        const finalSegments = [];
-        let missingGroup = [];
-        
-        for (const segment of segments) {
-            if (segment.type === this.ERROR_TYPES.MISSING) {
-                missingGroup.push(segment.text);
-            } else {
-                if (missingGroup.length > 0) {
-                    finalSegments.push({
-                        type: this.ERROR_TYPES.MISSING,
-                        text: missingGroup.join(' ')
-                    });
-                    missingGroup = [];
-                }
-                finalSegments.push(segment);
-            }
-        }
-        
-        if (missingGroup.length > 0) {
-            finalSegments.push({
-                type: this.ERROR_TYPES.MISSING,
-                text: missingGroup.join(' ')
-            });
-        }
-        
-        analysis.displaySegments = finalSegments;
         return analysis;
     }
 
     createHighlightedFeedback(submission, correct) {
         const analysis = this.analyzePhraseComparison(submission, correct);
         const html = [];
+        let prevWasWord = false;
         
-        for (let i = 0; i < analysis.displaySegments.length; i++) {
-            const segment = analysis.displaySegments[i];
-            if (i > 0) html.push(' ');
+        for (const segment of analysis.displaySegments) {
+            // Add space between words (not before punctuation)
+            const isPunct = /^[.!?,;:]+$/.test(segment.text);
+            if (prevWasWord && !isPunct) html.push(' ');
             
             switch (segment.type) {
                 case this.ERROR_TYPES.CORRECT:
                     html.push(segment.text);
                     break;
                 case this.ERROR_TYPES.WRONG:
-                    html.push(`<span style="color: #ff6b6b;">${segment.text}</span>`);
+                    html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${segment.text}</span>`);
+                    if (segment.correct) {
+                        const correctIsPunct = /^[.!?,;:]+$/.test(segment.correct);
+                        if (!correctIsPunct) html.push(' '); // Always add space before non-punctuation corrections
+                        html.push(`<span style="color: #131313; text-decoration: underline;">${segment.correct}</span>`);
+                    }
                     break;
                 case this.ERROR_TYPES.MISSING:
-                    html.push(`<span style="color: #d3d3d3; text-decoration: underline;">${segment.text}</span>`);
+                    html.push(`<span style="color: #131313; text-decoration: underline;">${segment.text}</span>`);
                     break;
                 case this.ERROR_TYPES.EXTRA:
                     html.push(`<span style="color: #ff6b6b; text-decoration: line-through;">${segment.text}</span>`);
                     break;
             }
+            
+            prevWasWord = !isPunct;
         }
         
         return html.join('');
@@ -233,24 +194,16 @@ class PhraseAnalyzer {
 
     calculatePhraseAccuracy(submission, correct) {
         if (!submission || !correct) return 0;
-        let correctChars = 0;
         const minLen = Math.min(submission.length, correct.length);
+        let matches = 0;
         for (let i = 0; i < minLen; i++) {
-            if (submission[i] === correct[i]) correctChars++;
+            if (submission[i] === correct[i]) matches++;
         }
-        return correctChars;
-    }
-
-    createEmptyAnalysis() {
-        return {
-            words: { correct: [], wrong: [], missing: [], extra: [] },
-            totalVotes: 0,
-            displaySegments: []
-        };
+        return matches;
     }
 }
 
-// Create singleton and exports
+// Singleton instance and exports
 const phraseAnalyzer = new PhraseAnalyzer();
 
 function analyzePhraseComparison(submission, correct) {
@@ -265,14 +218,21 @@ function calculatePhraseAccuracy(submission, correct) {
     return phraseAnalyzer.calculatePhraseAccuracy(submission, correct);
 }
 
+// Module exports for Node.js
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { PhraseAnalyzer, analyzePhraseComparison, createHighlightedFeedback, calculatePhraseAccuracy };
+    module.exports = { 
+        PhraseAnalyzer, 
+        analyzePhraseComparison, 
+        createHighlightedFeedback, 
+        calculatePhraseAccuracy 
+    };
 }
 
-if (typeof window === 'undefined') {
-    globalThis.PhraseAnalyzer = PhraseAnalyzer;
-    globalThis.analyzePhraseComparison = analyzePhraseComparison;
-    globalThis.createHighlightedFeedback = createHighlightedFeedback;
-    globalThis.calculatePhraseAccuracy = calculatePhraseAccuracy;
+// Global exports for browser
+if (typeof window !== 'undefined') {
+    window.PhraseAnalyzer = PhraseAnalyzer;
+    window.analyzePhraseComparison = analyzePhraseComparison;
+    window.createHighlightedFeedback = createHighlightedFeedback;
+    window.calculatePhraseAccuracy = calculatePhraseAccuracy;
 }
-// Streamlined from 612 lines to 198 lines on 2025-09-28
+// Streamlined from 251 lines to 218 lines on 2025-09-28
