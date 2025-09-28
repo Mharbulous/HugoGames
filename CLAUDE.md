@@ -22,15 +22,25 @@ This is a collection of educational browser games focused on French language lea
 
 ## Development Commands
 
-This is a static HTML/JavaScript project with no build system. To develop:
+This is a static HTML/JavaScript project with modern testing infrastructure. To develop:
 
 1. **Run locally**: Open `index.html` in a web browser or use a local web server:
    ```bash
-   python -m http.server 8000
+   npm run serve
+   # Or: python -m http.server 8000
    # Then visit http://localhost:8000
    ```
 
 2. **Test the game**: Navigate to "French Grammar Impostors" from the main page
+
+3. **Run tests**: Comprehensive test suite using Vitest:
+   ```bash
+   npm test              # Run tests in watch mode
+   npm run test:run      # Run tests once
+   npm run test:coverage # Run tests with coverage report
+   npm run test:phrase-analyzer # Test only the phrase analyzer
+   npm run test:ui       # Run tests with UI interface
+   ```
 
 ## Architecture Notes
 
@@ -54,3 +64,15 @@ The French Grammar Impostors game uses a modular JavaScript architecture loaded 
 - The main `index.html` links to `FrenchGrammarImposters/PlayAsCrew.html` (note: different from the main game file)
 - Game modules must be loaded in the specific order defined in `PlayAsCrew.html`
 - CSS styling is centralized in `FrenchGrammarImposters.css`
+
+### Testing Architecture
+- **Testing Framework**: Vitest with jsdom environment for DOM testing
+- **Coverage**: 98%+ code coverage for the phrase analyzer module
+- **Module Testing**: `phrase-analyzer.mjs` - ES module version for testing compatibility
+- **Test Files**: Located alongside source files with `.test.js` extension
+- **Key Tests**:
+  - Punctuation handling (two-phase analysis)
+  - Word-level error detection (missing, extra, position)
+  - Character-level error analysis with short word exceptions
+  - HTML output generation and highlighting
+  - Edge cases and complex scenarios

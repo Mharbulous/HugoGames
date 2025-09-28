@@ -518,6 +518,14 @@ function calculatePhraseAccuracy(submission, correct) {
 
 // Module exports for both CommonJS and browser
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { analyzePhraseComparison, createHighlightedFeedback, calculatePhraseAccuracy };
+    module.exports = { PhraseAnalyzer, analyzePhraseComparison, createHighlightedFeedback, calculatePhraseAccuracy };
+}
+
+// ES module exports
+if (typeof window === 'undefined') {
+    globalThis.PhraseAnalyzer = PhraseAnalyzer;
+    globalThis.analyzePhraseComparison = analyzePhraseComparison;
+    globalThis.createHighlightedFeedback = createHighlightedFeedback;
+    globalThis.calculatePhraseAccuracy = calculatePhraseAccuracy;
 }
 // Streamlined from 612 lines to 288 lines on 2025-09-27
