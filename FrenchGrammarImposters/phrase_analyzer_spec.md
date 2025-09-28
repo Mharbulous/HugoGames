@@ -1,4 +1,4 @@
-# French Grammar Impostors - Phrase Analyzer Specification
+# French Grammar Impostors - Simplified Phrase Analyzer Specification
 
 ## Overview
 
@@ -6,104 +6,69 @@ The phrase analyzer evaluates Hugo's French phrase corrections at the word level
 
 ## Error Types and Voting System
 
-### 1. Single Character Errors
-- **Definition**: One character wrong within a word (spelling, accent, capitalization, punctuation)
-- **Votes**: 1 vote
-- **Display**: Only the incorrect character(s) shown in red text
-- **Examples**: 
-  - "école" → "ecole" (missing accent)
+### 1. Correct Words
+- **Definition**: Word matches exactly in both submission and correct phrase at the same position
+- **Votes**: 0 votes
+- **Display**: Normal black text
+
+### 2. Wrong Words
+- **Definition**: Word in submission that should be a different word at that position
+- **Votes**: 1 vote (covers spelling, accent, capitalization, gender, and vocabulary errors)
+- **Display**: Entire word shown in red strikethrough text followed by underlined black text in correct position
+- **Examples**:
+  - "ecole" → "école" (missing accent)
+  - "le" → "la" (gender error)
+  - "heure" → "temps" (wrong vocabulary)
   - "Lundi" → "lundi" (capitalization)
-  - "J'ai" → "Jai" (missing apostrophe)
 
-### 2. Multiple Character Errors
-- **Definition**: Two or more characters wrong within a word
-- **Votes**: 2 votes (maximum per word)
-- **Display**: Entire word shown in red text
-- **Examples**:
-  - "heure" → "temps" (completely different word)
-  - "regardé" → "regarde" (multiple character differences)
-
-### 3. Short Word Exception
-- **Definition**: For words ≤3 characters (both submitted and correct), any character error is treated as wrong word choice
-- **Votes**: 2 votes
-- **Display**: Entire word shown in red text
-- **Rationale**: Handles gender agreement errors (le/la, un/une, à/au, etc.)
-- **Examples**:
-  - "le" → "la" (2 votes, not 1)
-  - "un" → "une" (2 votes, not 1)
-  - "à" → "au" (2 votes, not 1)
-
-### 4. Missing Words
+### 3. Missing Words
 - **Definition**: Required word present in correct phrase but absent from Hugo's submission
-- **Votes**: 2 votes
-- **Display**: Missing word shown in underlined ghostly gray text in correct position
+- **Votes**: 1 vote
+- **Display**: Missing word shown in underlined black text in correct position
 - **Example**: "Je suis fatigué" → "Je fatigué" (missing "suis")
 
-### 5. Position Errors
-- **Definition**: Correct word placed in wrong position within sentence
-- **Votes**: 1 vote
-- **Display**: 
-  - Strikethrough black text where Hugo placed it incorrectly
-  - Underlined ghostly gray text where it should be
-- **Example**: "chat rouge" → "rouge chat" 
-  - Display: "<s>rouge</s> chat <u style='color: gray'>rouge</u>"
-
-### 6. Extra Words
-- **Definition**: Superfluous word that doesn't belong anywhere in the correct phrase
+### 4. Extra Words
+- **Definition**: Superfluous word that doesn't belong in the correct phrase
 - **Votes**: 1 vote
 - **Display**: Red text with strikethrough
 - **Example**: "Je suis très fatigué" → "Je suis fatigué" (extra "très")
 
-## Character-Level Error Handling
+## Word Boundaries
 
-### Accent/Diacritic Errors
-- Treated as character errors within word-level analysis
-- Single accent error = 1 vote
-- Multiple accent errors in same word = 2 votes (max)
-
-### Capitalization Errors
-- Treated as character errors within word-level analysis
-- Single capitalization error = 1 vote
-- Combined with other errors may reach 2-vote maximum
-
-### Punctuation Errors
-- Treated as part of the word containing the punctuation
-- Missing apostrophe in "J'ai" → "Jai" = 1 vote (single character error)
-- Missing apostrophe in "J'y" → "Jy" = 2 votes (short word exception)
-
-## Analysis Priority Order
-
-1. **Exact matches** in correct positions (0 votes)
-2. **Character-level errors** at same positions (1-2 votes based on error count and word length)
-3. **Position errors** - words found elsewhere in correct phrase (1 vote)
-4. **Missing words** - required words not found in submission (2 votes)
-5. **Extra words** - submitted words not found in correct phrase (1 vote)
-
-## Design Decisions
-
-### Word Boundaries
-- Contractions like "qu'est-ce", "j'ai", "c'est" are treated as single words
+- Contractions like "qu'est-ce", "j'ai", "c'est", "d'eau" are treated as single words
 - Hyphenated compounds are treated as single words
-- Only whitespace separates words
+- Only whitespace and punctuation marks (.!?,;:) separates words. 
+- Punctuation marks (.!?,;:) should be treated as single character words.
 
-### Synonym Handling
-- **No synonym detection** - teaches specific vocabulary
-- Different correct words treated as errors to encourage learning target phrases
-- Promotes practice of specific constructions rather than comfortable alternatives
+## Analysis Process
 
-### Error Severity
-- Maximum 2 votes per word regardless of error count
-- Short words penalized more heavily due to grammatical importance
-- Position errors penalized less than wrong word choice
+1. **Tokenize** both submission and correct phrase into words (whitespace-separated)
+2. **Align words** using Longest Common Subsequence (LCS) algorithm
+3. **Categorize** each word as: correct, wrong, missing, or extra
+4. **Calculate votes** based on number of correct, wrong, missing or extra words (or punctuation marks)
+5. **Generate display** with appropriate styling
 
 ## Display Formatting
 
 | Error Type | HTML Styling | Visual Result |
 |------------|-------------|---------------|
 | Correct | Normal text | Black text |
-| Single char error | `<span style="color: #ff6b6b;">char</span>` | Red character(s) |
-| Multiple char error | `<span style="color: #ff6b6b;">word</span>` | Red word |
-| Missing word | `<span style="color: #d3d3d3; text-decoration: underline;">word</span>` | Gray underlined |
-| Position error (wrong) | `<span style="text-decoration: line-through;">word</span>` | Black strikethrough |
-| Position error (correct) | `<span style="color: #d3d3d3; text-decoration: underline;">word</span>` | Gray underlined |
+| Wrong word | `<span style="color: #ff6b6b; text-decoration: line-through;">word</span>` | Red strikethrough |
 | Extra word | `<span style="color: #ff6b6b; text-decoration: line-through;">word</span>` | Red strikethrough |
+| Missing word | `<span style="color: #131313; text-decoration: underline;">word</span>` | black underlined |
+
+## Design Decisions
+
+### Simplified Error Model
+- No distinction between character-level and word-level errors
+- All incorrect words are treated equally (1 vote penalty)
+
+### No Synonym Detection
+- Different words are always treated as errors
+- Teaches specific vocabulary and constructions
+- Promotes practice of target phrases
+
+### Alignment Strategy
+- LCS algorithm finds optimal word alignment
+- Minimizes total error count
+- Provides intuitive visual feedback
