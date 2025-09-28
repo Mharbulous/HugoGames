@@ -102,3 +102,12 @@ function playImpostorVictorySound() {
         console.log('Could not play impostor victory sound:', error);
     });
 }
+
+function playKnifeStabSound() {
+    // Try to play the knife_stab.mp3 file
+    const audio = new Audio('knife_stab.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(error => {
+        console.log('Could not play knife stab sound:', error);
+    });
+}

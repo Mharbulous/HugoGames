@@ -26,7 +26,8 @@ let impostorGameState = {
     hasVoted: false,
     isLastRound: false,
     currentDeadCharacter: -1, // Track most recently killed character
-    currentEjectedCharacter: -1 // Track most recently ejected character
+    currentEjectedCharacter: -1, // Track most recently ejected character
+    actionInProgress: false // Track if kill/sabotage action is in progress
 };
 
 // Initialize impostor game
@@ -57,7 +58,8 @@ function initializeImpostorGame() {
         hasVoted: false,
         isLastRound: false,
         currentDeadCharacter: -1,
-        currentEjectedCharacter: -1
+        currentEjectedCharacter: -1,
+        actionInProgress: false
     };
 
     // Clear any existing intervals
@@ -346,8 +348,17 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Allow killing during phrase_correction phase (merged functionality)
     if (impostorGameState.gamePhase !== 'phrase_correction' && impostorGameState.gamePhase !== 'kill_opportunity') return;
 
-    const victim = impostorGameState.characters[crewmateId];
+    const victim = impostorGameState.characters.find(char => char.id === crewmateId);
     if (!victim || victim.isImpostor || !victim.alive || victim.ejected) return;
+
+    // Prevent multiple actions by setting action in progress
+    impostorGameState.actionInProgress = true;
+
+    // Update display immediately to hide all action buttons
+    updateImpostorDisplay();
+
+    // Play knife stab sound effect
+    playKnifeStabSound();
 
     victim.alive = false;
     victim.deathPhrase = getRandomDeathPhrase('violent');
@@ -355,6 +366,9 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Set the current dead character and clear ejected character
     impostorGameState.currentDeadCharacter = crewmateId;
     impostorGameState.currentEjectedCharacter = -1;
+
+    // Update display immediately to show dead crewmate
+    updateImpostorDisplay();
 
     // Clear Hugo's phrase correction timer since killing ends the phase
     if (impostorGameState.hugoTimer) {
@@ -373,18 +387,23 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Clear AI impostor timers
     clearAITimers();
 
-    // Play emergency meeting sound
-    playEmergencyMeetingSound();
+    // Play emergency meeting sound after 2-second delay
+    setTimeout(() => {
+        playEmergencyMeetingSound();
+    }, 2000);
 
     // Proceed to emergency meeting
     setTimeout(() => {
         proceedToEmergencyMeeting();
-    }, 1000);
+    }, 3000);
 }
 
 // Proceed to emergency meeting
 function proceedToEmergencyMeeting() {
     impostorGameState.gamePhase = 'emergency_meeting';
+
+    // Reset action state for voting phase
+    impostorGameState.actionInProgress = false;
 
     // Clear any remaining timers
     clearAITimers();
