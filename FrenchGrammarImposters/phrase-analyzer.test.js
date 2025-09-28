@@ -42,11 +42,12 @@ describe('PhraseAnalyzer', () => {
       expect(missingWords[0].word).toBe('du')
       expect(missingWords[1].word).toBe('tout')
 
-      // Display should preserve punctuation
+      // Display should preserve punctuation appropriately
+      // After our fix, "rien" punctuation is repositioned to after missing words
       const segments = result.displaySegments
-      const rienSegment = segments.find(s => s.text.includes('rien!'))
+      const rienSegment = segments.find(s => s.text.includes('rien'))
       expect(rienSegment).toBeDefined()
-      expect(rienSegment.text).toBe('rien!')
+      expect(rienSegment.text).toBe('rien') // Punctuation is now repositioned
     })
 
     it('should detect actual punctuation errors', () => {
@@ -106,6 +107,7 @@ describe('PhraseAnalyzer', () => {
         'Je suis très heureux'
       )
 
+
       expect(result.words.extra.length).toBe(1)
       expect(result.words.extra[0].word).toBe('très')
       // Total votes should account for extra word (1) + position adjustments (2) = 3
@@ -117,6 +119,7 @@ describe('PhraseAnalyzer', () => {
         'très Je suis heureux',
         'Je suis très heureux'
       )
+
 
       // The algorithm detects multiple position errors and one extra word
       expect(result.words.errors.length).toBe(2) // Je and suis are in wrong positions
@@ -194,6 +197,60 @@ describe('PhraseAnalyzer', () => {
       // Should correctly identify missing words
       expect(result.words.missing.length).toBe(2)
       expect(result.words.missing.map(m => m.word)).toEqual(['du', 'tout'])
+    })
+
+    it('should position missing words correctly before existing punctuation', () => {
+      const html = analyzer.createHighlightedFeedback(
+        'Qu\'est-ce que tu fais ici? Oh, rien!',
+        'Qu\'est-ce que tu fais ici? Oh, rien du tout!'
+      )
+
+      // Missing words should appear BEFORE the existing punctuation, not after
+      // Expected: "Qu'est-ce que tu fais ici? Oh, rien <missing>du tout</missing>!"
+      // NOT: "Qu'est-ce que tu fais ici? Oh, rien! <missing>du tout!</missing>"
+      const expectedPattern = /rien\s+<span style="color: #d3d3d3; text-decoration: underline;">du tout<\/span>!/
+      expect(html).toMatch(expectedPattern)
+
+      // Should NOT have punctuation after the missing words
+      const incorrectPattern = /rien!\s+<span.*>du tout!<\/span>/
+      expect(html).not.toMatch(incorrectPattern)
+    })
+
+    it('should maintain submitted phrase structure in display output', () => {
+      const analysis = analyzer.analyzePhraseComparison(
+        'Quel temps est-il?',
+        'Quelle heure est-il?'
+      )
+
+      const html = analyzer.createHighlightedFeedback(
+        'Quel temps est-il?',
+        'Quelle heure est-il?'
+      )
+
+      // For this specific case, the optimal display would be:
+      // "Quel <strikethrough>temps</strikethrough><missing>heure</missing> est-il?"
+      // But due to similarity, "Quel" might be treated as character error to "Quelle"
+      // The key requirement is that the order must be: Quel, temps, heure, est-il?
+
+      // Check that the order is correct regardless of styling
+      expect(html).toContain('Quel')
+      expect(html).toContain('temps')
+      expect(html).toContain('heure')
+      expect(html).toContain('est-il?')
+
+      // Verify the order by checking position indices
+      const quelPos = html.indexOf('Quel')
+      const tempsPos = html.indexOf('temps')
+      const heurePos = html.indexOf('heure')
+      const estilPos = html.indexOf('est-il?')
+
+      expect(quelPos).toBeLessThan(tempsPos)
+      expect(tempsPos).toBeLessThan(heurePos)
+      expect(heurePos).toBeLessThan(estilPos)
+
+      // Should NOT show the incorrect order where "temps" appears before "Quel"
+      const incorrectPattern = /<span[^>]*line-through[^>]*>temps<\/span>\s*Quel/
+      expect(html).not.toMatch(incorrectPattern)
     })
   })
 

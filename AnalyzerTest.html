@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phrase Analyzer Development Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background-color: #4a5568;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .correct-phrase {
+            background-color: white;
+            color: black;
+            font-weight: normal;
+        }
+
+        .impostor-phrase {
+            font-family: monospace;
+            line-height: 1.4;
+        }
+
+        .vote-count {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #d73527;
+        }
+
+        .row-number {
+            width: 50px;
+            text-align: center;
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phrase Analyzer Development Test</h1>
+    <p>This table shows how the phrase analyzer processes each phrase pair from the game data.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Correct phrase</th>
+                <th>Imposter phrase</th>
+                <th># of votes attracted</th>
+            </tr>
+        </thead>
+        <tbody id="phrase-table-body">
+            <!-- Rows will be populated by JavaScript -->
+        </tbody>
+    </table>
+
+    <!-- Import game data and phrase analyzer -->
+    <script src="FrenchGrammarImposters/game-data.js"></script>
+    <script src="FrenchGrammarImposters/phrase-analyzer.js"></script>
+
+    <script>
+        // Initialize the phrase analyzer
+        const analyzer = new PhraseAnalyzer();
+
+        // Get the table body element
+        const tableBody = document.getElementById('phrase-table-body');
+
+        // Process each phrase pair
+        phrasePairs.forEach((pair, index) => {
+            // Analyze the phrase comparison
+            const analysis = analyzer.analyzePhraseComparison(pair.impostor, pair.correct);
+
+            // Generate the highlighted feedback HTML
+            const highlightedFeedback = analyzer.createHighlightedFeedback(pair.impostor, pair.correct);
+
+            // Create a new table row
+            const row = document.createElement('tr');
+
+            // Row number cell
+            const numberCell = document.createElement('td');
+            numberCell.className = 'row-number';
+            numberCell.textContent = index + 1;
+
+            // Correct phrase cell
+            const correctCell = document.createElement('td');
+            correctCell.className = 'correct-phrase';
+            correctCell.textContent = pair.correct;
+
+            // Impostor phrase cell with formatting
+            const impostorCell = document.createElement('td');
+            impostorCell.className = 'impostor-phrase';
+            impostorCell.innerHTML = highlightedFeedback;
+
+            // Vote count cell
+            const voteCell = document.createElement('td');
+            voteCell.className = 'vote-count';
+            voteCell.textContent = analysis.totalVotes;
+
+            // Add cells to row
+            row.appendChild(numberCell);
+            row.appendChild(correctCell);
+            row.appendChild(impostorCell);
+            row.appendChild(voteCell);
+
+            // Add row to table
+            tableBody.appendChild(row);
+        });
+    </script>
+</body>
+</html>

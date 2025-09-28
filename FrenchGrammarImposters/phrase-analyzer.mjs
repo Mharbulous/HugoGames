@@ -206,6 +206,19 @@ export class PhraseAnalyzer {
             submittedSet.get(word).push(idx);
         });
 
+        // Process alignment and build segments in the correct order
+        this.buildDisplaySegments(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords, analysis, submittedSet);
+
+        return analysis;
+    }
+
+    /**
+     * Build display segments with proper positioning of missing words
+     */
+    buildDisplaySegments(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords, analysis, submittedSet) {
+        // Hybrid approach: Use LCS alignment for accuracy but build segments in submitted order
+
+        // First, process alignment to collect analysis data (but not display segments yet)
         for (const item of alignment) {
             if (item.type === 'match') {
                 // Check if it's in the correct position or a position error
@@ -223,19 +236,11 @@ export class PhraseAnalyzer {
                         votes: 1
                     });
                     analysis.totalVotes += 1;
-                    analysis.displaySegments.push({
-                        type: this.ERROR_TYPES.POSITION,
-                        text: originalSubmittedWords[item.subIndex] || item.submitted
-                    });
                 } else {
                     // Correct word in correct position
                     analysis.words.correct.push({
                         word: item.submitted,
                         votes: 0
-                    });
-                    analysis.displaySegments.push({
-                        type: this.ERROR_TYPES.CORRECT,
-                        text: originalSubmittedWords[item.subIndex] || item.submitted
                     });
                 }
             } else if (item.type === 'missing') {
@@ -243,7 +248,7 @@ export class PhraseAnalyzer {
                 const existsElsewhere = submittedWords.includes(item.correct);
 
                 if (existsElsewhere) {
-                    // It's a position error, will be handled when we encounter it
+                    // It's a position error, already handled above
                     continue;
                 } else {
                     // Check if there's a similar word (character-level error)
@@ -253,14 +258,6 @@ export class PhraseAnalyzer {
                         const errorAnalysis = this.analyzeWordError(similarWord, item.correct);
                         analysis.words.errors.push(errorAnalysis);
                         analysis.totalVotes += errorAnalysis.votes;
-                        // Find original word with punctuation for the similar word
-                        const originalSimilarWord = this.findOriginalWordForSimilar(similarWord, originalSubmittedWords, submittedWords);
-                        analysis.displaySegments.push({
-                            type: errorAnalysis.type,
-                            text: originalSimilarWord,
-                            correct: item.correct,
-                            errorPositions: errorAnalysis.errorPositions
-                        });
                     } else {
                         // Truly missing - 2 votes
                         analysis.words.missing.push({
@@ -268,35 +265,302 @@ export class PhraseAnalyzer {
                             votes: 2
                         });
                         analysis.totalVotes += 2;
-                        analysis.displaySegments.push({
-                            type: this.ERROR_TYPES.MISSING,
-                            text: originalCorrectWords[item.corrIndex] || item.correct
-                        });
                     }
                 }
             } else if (item.type === 'extra') {
                 // Check if it's similar to a missing word
                 const similarCorrect = this.findSimilarCorrectWord(item.submitted, alignment, item.subIndex);
 
-                if (similarCorrect) {
-                    // Already handled in missing section
-                    continue;
-                } else {
+                if (!similarCorrect) {
                     // Truly extra - 1 vote
                     analysis.words.extra.push({
                         word: item.submitted,
                         votes: 1
                     });
                     analysis.totalVotes += 1;
-                    analysis.displaySegments.push({
-                        type: this.ERROR_TYPES.EXTRA,
-                        text: originalSubmittedWords[item.subIndex] || item.submitted
-                    });
                 }
             }
         }
 
-        return analysis;
+        // Now build display segments in submitted word order
+        this.buildDisplaySegmentsInSubmittedOrder(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords, analysis, submittedSet);
+
+        // Post-process segments to group consecutive missing words and fix punctuation positioning
+        this.postProcessDisplaySegments(analysis);
+    }
+
+    /**
+     * Build display segments maintaining submitted phrase order
+     */
+    buildDisplaySegmentsInSubmittedOrder(alignment, submittedWords, correctWords, originalSubmittedWords, originalCorrectWords, analysis, submittedSet) {
+        const segments = [];
+        const alignmentBySubIndex = new Map();
+        const alignmentByCorrIndex = new Map();
+
+        // Create lookup maps
+        for (const item of alignment) {
+            if (item.subIndex !== null) {
+                alignmentBySubIndex.set(item.subIndex, item);
+            }
+            if (item.corrIndex !== null) {
+                alignmentByCorrIndex.set(item.corrIndex, item);
+            }
+        }
+
+        // Track which correct indices have been processed
+        const processedCorrIndices = new Set();
+
+        // Process submitted words in their original order
+        for (let subIndex = 0; subIndex < submittedWords.length; subIndex++) {
+            const submittedWord = submittedWords[subIndex];
+            const originalSubmittedWord = originalSubmittedWords[subIndex] || submittedWord;
+            const alignmentItem = alignmentBySubIndex.get(subIndex);
+
+            if (alignmentItem) {
+                if (alignmentItem.type === 'match') {
+                    // Check if it's in the correct position or a position error
+                    const availablePositions = submittedSet.get(submittedWord);
+                    const isPositionError = availablePositions &&
+                        availablePositions.includes(subIndex) &&
+                        subIndex !== alignmentItem.corrIndex;
+
+                    if (isPositionError) {
+                        segments.push({
+                            type: this.ERROR_TYPES.POSITION,
+                            text: originalSubmittedWord
+                        });
+                    } else {
+                        segments.push({
+                            type: this.ERROR_TYPES.CORRECT,
+                            text: originalSubmittedWord
+                        });
+                    }
+                    processedCorrIndices.add(alignmentItem.corrIndex);
+
+                } else if (alignmentItem.type === 'extra') {
+                    // Check if it's similar to a missing word (character-level error)
+                    const similarCorrect = this.findSimilarCorrectWord(submittedWord, alignment, subIndex);
+
+                    if (similarCorrect) {
+                        // Character-level error
+                        const errorAnalysis = this.analyzeWordError(submittedWord, similarCorrect);
+                        const originalSimilarWord = this.findOriginalWordForSimilar(submittedWord, originalSubmittedWords, submittedWords);
+                        segments.push({
+                            type: errorAnalysis.type,
+                            text: originalSimilarWord,
+                            correct: similarCorrect,
+                            errorPositions: errorAnalysis.errorPositions
+                        });
+                    } else {
+                        segments.push({
+                            type: this.ERROR_TYPES.EXTRA,
+                            text: originalSubmittedWord
+                        });
+                    }
+                }
+            }
+
+            // After processing this submitted word, check for missing words that should appear here
+            // For the specific case we're fixing, we want missing words to appear immediately after their logical position
+            if (alignmentItem && alignmentItem.type === 'extra') {
+                // After an extra word, check if there's a missing word that should go here
+                const logicalCorrIndex = subIndex;
+                const missingItem = alignmentByCorrIndex.get(logicalCorrIndex);
+                if (missingItem && missingItem.type === 'missing' && !processedCorrIndices.has(logicalCorrIndex)) {
+                    const existsElsewhere = submittedWords.includes(missingItem.correct);
+                    if (!existsElsewhere) {
+                        const similarWord = this.findSimilarWord(missingItem.correct, alignment, logicalCorrIndex);
+                        if (!similarWord) {
+                            segments.push({
+                                type: this.ERROR_TYPES.MISSING,
+                                text: originalCorrectWords[logicalCorrIndex] || missingItem.correct
+                            });
+                            processedCorrIndices.add(logicalCorrIndex);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add any remaining missing words at the end
+        for (let corrIndex = 0; corrIndex < correctWords.length; corrIndex++) {
+            if (!processedCorrIndices.has(corrIndex)) {
+                const missingItem = alignmentByCorrIndex.get(corrIndex);
+                if (missingItem && missingItem.type === 'missing') {
+                    const existsElsewhere = submittedWords.includes(missingItem.correct);
+                    if (!existsElsewhere) {
+                        const similarWord = this.findSimilarWord(missingItem.correct, alignment, corrIndex);
+                        if (!similarWord) {
+                            segments.push({
+                                type: this.ERROR_TYPES.MISSING,
+                                text: originalCorrectWords[corrIndex] || missingItem.correct
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        analysis.displaySegments = segments;
+    }
+
+    /**
+     * Add missing word segment with proper punctuation handling
+     */
+    addMissingWordSegment(analysis, item, originalCorrectWords) {
+        let missingText = originalCorrectWords[item.corrIndex] || item.correct;
+
+        // If this missing word has punctuation that should stay with a previous word, strip it
+        if (this.shouldStripPunctuation(analysis, missingText)) {
+            missingText = this.stripEndPunctuation(missingText);
+        }
+
+        analysis.displaySegments.push({
+            type: this.ERROR_TYPES.MISSING,
+            text: missingText
+        });
+    }
+
+    /**
+     * Determine if punctuation should be stripped from a missing word
+     */
+    shouldStripPunctuation(analysis, missingText) {
+        // If the previous segment is a correct word that already has punctuation,
+        // and this missing word also has punctuation, strip it to avoid duplication
+        const lastSegment = analysis.displaySegments[analysis.displaySegments.length - 1];
+        if (lastSegment && lastSegment.type === this.ERROR_TYPES.CORRECT) {
+            const lastWordHasPunctuation = /[.!?]$/.test(lastSegment.text);
+            const missingWordHasPunctuation = /[.!?]$/.test(missingText);
+            return lastWordHasPunctuation && missingWordHasPunctuation;
+        }
+        return false;
+    }
+
+    /**
+     * Post-process display segments to improve positioning and grouping
+     */
+    postProcessDisplaySegments(analysis) {
+        // First, handle punctuation repositioning for missing words that come after punctuated words
+        this.repositionMissingWordsBeforePunctuation(analysis);
+
+        // Then group consecutive missing words together
+        const segments = analysis.displaySegments;
+        const newSegments = [];
+        let missingGroup = [];
+        let groupTrailingPunctuation = null;
+
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+
+            if (segment.type === this.ERROR_TYPES.MISSING) {
+                missingGroup.push(segment.text);
+                // Preserve trailing punctuation from the last missing word in the group
+                if (segment.trailingPunctuation) {
+                    groupTrailingPunctuation = segment.trailingPunctuation;
+                }
+            } else {
+                // If we have accumulated missing words, add them as a group
+                if (missingGroup.length > 0) {
+                    const groupedSegment = {
+                        type: this.ERROR_TYPES.MISSING,
+                        text: missingGroup.join(' ')
+                    };
+                    if (groupTrailingPunctuation) {
+                        groupedSegment.trailingPunctuation = groupTrailingPunctuation;
+                    }
+                    newSegments.push(groupedSegment);
+                    missingGroup = [];
+                    groupTrailingPunctuation = null;
+                }
+                newSegments.push(segment);
+            }
+        }
+
+        // Don't forget any trailing missing words
+        if (missingGroup.length > 0) {
+            const groupedSegment = {
+                type: this.ERROR_TYPES.MISSING,
+                text: missingGroup.join(' ')
+            };
+            if (groupTrailingPunctuation) {
+                groupedSegment.trailingPunctuation = groupTrailingPunctuation;
+            }
+            newSegments.push(groupedSegment);
+        }
+
+        analysis.displaySegments = newSegments;
+    }
+
+    /**
+     * Reposition missing words to appear before punctuation when appropriate
+     */
+    repositionMissingWordsBeforePunctuation(analysis) {
+        const segments = analysis.displaySegments;
+
+        // Look for pattern: [correct word with punctuation] followed by [missing words with same punctuation]
+        for (let i = 0; i < segments.length; i++) {
+            const currentSegment = segments[i];
+
+            // Check if we have a correct word with punctuation
+            if (currentSegment.type === this.ERROR_TYPES.CORRECT) {
+                const currentPunctuation = this.extractWordPunctuation(currentSegment.text);
+
+                if (currentPunctuation) {
+                    // Look for following missing words that have the same punctuation
+                    let foundMatchingMissingWord = false;
+
+                    for (let j = i + 1; j < segments.length; j++) {
+                        const laterSegment = segments[j];
+
+                        if (laterSegment.type === this.ERROR_TYPES.MISSING) {
+                            const missingPunctuation = this.extractWordPunctuation(laterSegment.text);
+
+                            // If we find a missing word with the same punctuation, this is our target
+                            if (missingPunctuation === currentPunctuation) {
+                                // Strip punctuation from current word
+                                currentSegment.text = this.stripEndPunctuation(currentSegment.text);
+
+                                // Mark the last missing word in any sequence to carry the punctuation
+                                // Look for the last missing word that has this punctuation
+                                let lastMissingWithPunctuation = j;
+                                for (let k = j + 1; k < segments.length; k++) {
+                                    if (segments[k].type === this.ERROR_TYPES.MISSING &&
+                                        this.extractWordPunctuation(segments[k].text) === currentPunctuation) {
+                                        lastMissingWithPunctuation = k;
+                                    } else {
+                                        break;
+                                    }
+                                }
+
+                                // Strip punctuation from all missing words and add trailing punctuation to the last one
+                                for (let k = j; k <= lastMissingWithPunctuation; k++) {
+                                    if (segments[k].type === this.ERROR_TYPES.MISSING) {
+                                        segments[k].text = this.stripEndPunctuation(segments[k].text);
+                                        if (k === lastMissingWithPunctuation) {
+                                            segments[k].trailingPunctuation = currentPunctuation;
+                                        }
+                                    }
+                                }
+
+                                foundMatchingMissingWord = true;
+                                break;
+                            }
+                        } else if (laterSegment.type === this.ERROR_TYPES.CORRECT) {
+                            // Stop looking if we hit another correct word
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Extract punctuation from a word
+     */
+    extractWordPunctuation(word) {
+        const match = word.match(/[.!?]+$/);
+        return match ? match[0] : '';
     }
 
     /**
@@ -424,6 +688,10 @@ export class PhraseAnalyzer {
                     break;
                 case this.ERROR_TYPES.MISSING:
                     html.push(`<span style="color: #d3d3d3; text-decoration: underline;">${segment.text}</span>`);
+                    // Add trailing punctuation if it was repositioned
+                    if (segment.trailingPunctuation) {
+                        html.push(segment.trailingPunctuation);
+                    }
                     break;
                 case this.ERROR_TYPES.POSITION:
                     html.push(`<span style="text-decoration: line-through;">${segment.text}</span>`);
