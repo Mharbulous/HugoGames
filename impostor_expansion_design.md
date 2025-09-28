@@ -116,7 +116,7 @@ Hugo must use proper French accent marks for perfect scoring:
 ## Technical Requirements
 
 ### File Structure
-- **Main File:** `PlayAsImpostor.html` (alongside existing `PlayAsCrew.html`)
+- **Main File:** `PlayAsImposter.html` (alongside existing `PlayAsCrew.html`)
 - **Asset Dependencies:** 
   - `venting.svg` (impostor character graphic)
   - All existing game assets and modules
