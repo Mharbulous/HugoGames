@@ -212,12 +212,13 @@ class PhraseAnalyzer {
         
         // Now render the grouped segments
         let prevWasWord = false;
+        let prevWasPunct = false;
         
         for (const segment of groupedSegments) {
             if (segment.type === 'error_group') {
-                // Add space before error group if previous was a word
+                // Add space before error group if previous was a word or punctuation
                 const allStrikes = [...segment.wrongs, ...segment.extras];
-                if (prevWasWord && allStrikes.length > 0) {
+                if ((prevWasWord || prevWasPunct) && allStrikes.length > 0) {
                     const firstIsPunct = /^[.!?,;:]+$/.test(allStrikes[0]);
                     if (!firstIsPunct) html.push(' ');
                 }
@@ -258,19 +259,31 @@ class PhraseAnalyzer {
                     html.push(`<span style="color: #131313; text-decoration: underline;">${missing}</span>`);
                 }
                 
-                // Update prevWasWord
+                // Update prev flags
                 const allInsertions = [...segment.corrections, ...segment.missings];
                 if (allInsertions.length > 0) {
-                    prevWasWord = !/^[.!?,;:]+$/.test(allInsertions[allInsertions.length - 1]);
+                    const lastText = allInsertions[allInsertions.length - 1];
+                    prevWasPunct = /^[.!?,;:]+$/.test(lastText);
+                    prevWasWord = !prevWasPunct;
                 } else if (allStrikes.length > 0) {
-                    prevWasWord = !/^[.!?,;:]+$/.test(allStrikes[allStrikes.length - 1]);
+                    const lastText = allStrikes[allStrikes.length - 1];
+                    prevWasPunct = /^[.!?,;:]+$/.test(lastText);
+                    prevWasWord = !prevWasPunct;
                 }
                 
             } else {
                 // Handle correct segments
                 const isPunct = segment.text && /^[.!?,;:]+$/.test(segment.text);
-                if (prevWasWord && !isPunct) html.push(' ');
+                
+                // Add space before this segment if:
+                // - Previous was a word and this is not punctuation
+                // - Previous was punctuation (always add space after punctuation)
+                if ((prevWasWord && !isPunct) || prevWasPunct) {
+                    html.push(' ');
+                }
+                
                 html.push(segment.text);
+                prevWasPunct = isPunct;
                 prevWasWord = !isPunct;
             }
         }
