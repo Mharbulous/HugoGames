@@ -278,16 +278,11 @@ function submitCorrection(autoSubmit = false) {
         impostorGameState.hugoTimer = null;
     }
 
-    // Check if Hugo finished before AI impostors
-    const aiStillWorking = impostorGameState.aiImpostorTimers.length > 0;
+    // Clear AI impostor timers since Hugo submitted
+    clearAITimers();
 
-    if (aiStillWorking && !impostorGameState.lastImpostorMode) {
-        // Hugo might get kill opportunity
-        checkKillOpportunity();
-    } else {
-        // No kill opportunity - proceed to emergency meeting
-        proceedToEmergencyMeeting();
-    }
+    // Proceed directly to emergency meeting (kill opportunity is now merged with phrase correction)
+    proceedToEmergencyMeeting();
 }
 
 // Check for kill opportunity
@@ -348,7 +343,8 @@ function handleAIImpostorKill() {
 
 // Kill a crewmate
 function killCrewmate(crewmateId, killedByHugo = true) {
-    if (!impostorGameState.canKill) return;
+    // Allow killing during phrase_correction phase (merged functionality)
+    if (impostorGameState.gamePhase !== 'phrase_correction' && impostorGameState.gamePhase !== 'kill_opportunity') return;
 
     const victim = impostorGameState.characters[crewmateId];
     if (!victim || victim.isImpostor || !victim.alive || victim.ejected) return;
@@ -359,6 +355,12 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Set the current dead character and clear ejected character
     impostorGameState.currentDeadCharacter = crewmateId;
     impostorGameState.currentEjectedCharacter = -1;
+
+    // Clear Hugo's phrase correction timer since killing ends the phase
+    if (impostorGameState.hugoTimer) {
+        clearInterval(impostorGameState.hugoTimer);
+        impostorGameState.hugoTimer = null;
+    }
 
     // Clear kill timer
     if (impostorGameState.killTimer) {

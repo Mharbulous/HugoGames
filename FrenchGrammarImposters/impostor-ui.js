@@ -119,11 +119,16 @@ function updateCharactersDisplay() {
             svgContent = crewmateSVGs.alive;
         }
 
-        // Add kill button content to vote button if in kill opportunity phase
+        // Add button content based on character type and game phase
         let buttonContent = '';
-        if (impostorGameState.gamePhase === 'kill_opportunity' && !character.isImpostor && character.alive && !character.ejected) {
-            buttonContent = `<button class="vote-btn kill-btn" onclick="killCrewmate(${character.id})">🗡️ Éliminer ${character.name}</button>`;
-        } else if (impostorGameState.gamePhase === 'emergency_meeting' && !impostorGameState.hasVoted && character.alive && !character.ejected) {
+        if (impostorGameState.gamePhase === 'phrase_correction' && !character.isImpostor && character.alive && !character.ejected) {
+            // Eliminer buttons for crewmates during phrase correction
+            buttonContent = `<button class="vote-btn kill-btn" onclick="killCrewmate(${character.id})"><img src="knife.svg" alt="Knife" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Éliminer ${character.name}</button>`;
+        } else if (impostorGameState.gamePhase === 'phrase_correction' && character.isImpostor && !isHugo && character.alive && !character.ejected) {
+            // Saboter buttons for living impostors (except Hugo) during phrase correction
+            buttonContent = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="sabotage.svg" alt="Sabotage" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
+        } else if (impostorGameState.gamePhase === 'emergency_meeting' && !impostorGameState.hasVoted && character.alive && !character.ejected && !isHugo) {
+            // Vote buttons for all characters except Hugo (Hugo cannot vote for himself)
             buttonContent = `<button class="vote-btn ${votingDisabled ? 'voting-disabled' : ''}"
                 style="background-color: ${character.color}; color: ${character.color === '#FFFFFF' || character.color === '#F5F557' ? '#000' : '#FFF'}"
                 onclick="voteImpostorCharacter(${character.id})" ${!character.alive || character.ejected || impostorGameState.gameOver ? 'disabled' : ''}>
@@ -131,11 +136,7 @@ function updateCharactersDisplay() {
             </button>`;
         }
 
-        // Add submit button for Hugo during phrase correction
-        let hugoSubmitButton = '';
-        if (isHugo && impostorGameState.gamePhase === 'phrase_correction') {
-            hugoSubmitButton = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="sabotage.svg" alt="Sabotage" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
-        }
+        // Hugo no longer gets a submit button - moved to impostor cards
 
         // Add Hugo's special contenteditable speech bubble during phrase correction
         let hugoTextareaElement = '';
@@ -151,7 +152,6 @@ function updateCharactersDisplay() {
             ${hugoTextareaElement}
             ${speechBubbleClass ? `<div class="${speechBubbleClass}">${speechContent}</div>` : ''}
             ${buttonContent}
-            ${hugoSubmitButton}
         </div>
         `;
     }).join('');
@@ -175,19 +175,11 @@ function updateGamePhaseDisplay() {
             if (accentHelpCard) accentHelpCard.style.display = 'block';
             if (voteTitle) voteTitle.innerHTML = '';
             if (voteInstructions) {
-                voteInstructions.innerHTML = `Round ${impostorGameState.round} - Vous êtes un imposteur ! Corrigez la phrase pour éviter la détection.`;
+                voteInstructions.innerHTML = `Round ${impostorGameState.round} - Vous êtes un imposteur ! Corrigez la phrase ET éliminez un membre d'équipage si possible.`;
             }
             if (voteButtons) voteButtons.innerHTML = '';
             break;
 
-        case 'kill_opportunity':
-            if (killOpportunityArea) killOpportunityArea.style.display = 'block';
-            if (voteTitle) voteTitle.innerHTML = '';
-            if (voteInstructions) {
-                voteInstructions.innerHTML = 'Opportunité d\'élimination ! Cliquez sur un membre d\'équipage pour l\'éliminer !';
-            }
-            if (voteButtons) voteButtons.innerHTML = '';
-            break;
 
         case 'emergency_meeting':
             if (voteTitle) voteTitle.innerHTML = '🚨 Réunion d\'urgence! 🚨';
