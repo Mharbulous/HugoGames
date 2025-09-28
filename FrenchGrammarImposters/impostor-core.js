@@ -175,9 +175,36 @@ function startTaskProgressTimer() {
     }, 100); // Update every 100ms for smooth progress
 }
 
+// Pause task progress timer (during voting/emergency meetings)
+function pauseTaskProgressTimer() {
+    if (impostorGameState.taskProgressInterval) {
+        clearInterval(impostorGameState.taskProgressInterval);
+        impostorGameState.taskProgressInterval = null;
+    }
+}
+
+// Resume task progress timer (when returning to active gameplay)
+function resumeTaskProgressTimer() {
+    // Only resume if not already running and game isn't over
+    if (!impostorGameState.taskProgressInterval && !impostorGameState.gameOver) {
+        impostorGameState.taskProgressInterval = setInterval(() => {
+            impostorGameState.taskProgress += 0.1; // Increment by 0.1 seconds
+            updateTaskProgressBar();
+
+            if (impostorGameState.taskProgress >= impostorConfig.taskProgressTotal) {
+                // Tasks completed - Hugo loses
+                endGameTasksCompleted();
+            }
+        }, 100); // Update every 100ms for smooth progress
+    }
+}
+
 // Start phrase correction phase
 function startPhraseCorrection() {
     impostorGameState.gamePhase = 'phrase_correction';
+
+    // Ensure task progress timer is running during active gameplay
+    resumeTaskProgressTimer();
 
     // Select random phrase for Hugo to correct
     const availablePairs = phrasePairs.filter((_, index) =>
@@ -402,6 +429,9 @@ function killCrewmate(crewmateId, killedByHugo = true) {
 function proceedToEmergencyMeeting() {
     impostorGameState.gamePhase = 'emergency_meeting';
 
+    // Pause task progress during voting phase
+    pauseTaskProgressTimer();
+
     // Reset action state for voting phase
     impostorGameState.actionInProgress = false;
 
@@ -508,6 +538,10 @@ function checkImpostorVictory() {
 function startNextRound() {
     impostorGameState.round++;
     impostorGameState.hasVoted = false;
+
+    // Resume task progress for new round
+    resumeTaskProgressTimer();
+
     startPhraseCorrection();
 }
 

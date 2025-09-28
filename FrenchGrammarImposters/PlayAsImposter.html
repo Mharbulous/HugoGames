@@ -10,15 +10,6 @@
     <h1 class="game-title">French Grammar Impostors</h1>
     <div class="version">Version 4.0 - Mode Imposteur</div>
 
-    <!-- Task Progress Bar -->
-    <div class="task-progress-container">
-        <div class="task-progress-label">Tâches de l'équipage : <span id="taskPercentage">0%</span></div>
-        <div class="task-progress-bar">
-            <div class="task-progress-fill" id="taskProgressFill"></div>
-        </div>
-        <div class="task-warning" id="taskWarning">⚠️ Les tâches approchent de la completion !</div>
-    </div>
-
     <!-- Accent Help Card -->
     <div class="accent-help-card" id="accentHelpCard">
         <div class="accent-help-title">Aide pour les accents :</div>
@@ -39,6 +30,15 @@
         <div class="vote-title" id="voteTitle"></div>
         <p id="voteInstructions">Vous êtes un imposteur ! Éliminez tous les membres d'équipage avant qu'ils ne terminent leurs tâches.</p>
         <div id="voteButtons"></div>
+    </div>
+
+    <!-- Task Progress Bar -->
+    <div class="task-progress-container">
+        <div class="task-progress-bar">
+            <div class="task-progress-fill" id="taskProgressFill"></div>
+            <div class="task-progress-text">NOMBRE DE TÂCHES ACCOMPLIES</div>
+        </div>
+        <div class="task-warning" id="taskWarning">⚠️ Les tâches approchent de la completion !</div>
     </div>
 
     <!-- Crewmates Area -->

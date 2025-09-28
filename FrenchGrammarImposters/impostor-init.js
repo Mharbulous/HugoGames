@@ -5,8 +5,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('French Grammar Impostors - Impostor Mode Loading...');
 
-    // Inject impostor-specific styles
-    injectImpostorStyles();
+    // Styles now loaded from external CSS file (FrenchGrammarImposters.css)
 
     // Initialize UI handlers
     initializeImpostorUI();
