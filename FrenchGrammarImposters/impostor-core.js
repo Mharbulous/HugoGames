@@ -14,7 +14,9 @@ let impostorGameState = {
     currentPhraseIndex: -1,
     currentPhrase: "",
     correctPhrase: "",
+    previousCorrectPhrase: "", // Preserves the correct phrase from previous round for voting feedback
     hugoSubmission: "",
+    previousHugoSubmission: "", // Preserves Hugo's submission from previous round for voting feedback
     hugoTimeLeft: 60,
     hugoTimer: null,
     aiImpostorTimers: [],
@@ -27,7 +29,18 @@ let impostorGameState = {
     isLastRound: false,
     currentDeadCharacter: -1, // Track most recently killed character
     currentEjectedCharacter: -1, // Track most recently ejected character
-    actionInProgress: false // Track if kill/sabotage action is in progress
+    actionInProgress: false, // Track if kill/sabotage action is in progress
+    // Automated voting system state
+    automatedVotingActive: false,
+    votesNeededForHugo: 0,
+    votesCastForHugo: 0,
+    persistentVoters: [], // Crewmates that voted for Hugo and will continue voting
+    votingTimers: [], // Timers for cleanup
+    individualVotes: {}, // Tracks votes per character with voter details
+    // Voting countdown timer state
+    votingTimeLeft: 20,
+    votingTimer: null,
+    maxVotingTime: 20
 };
 
 // Initialize impostor game
@@ -46,7 +59,9 @@ function initializeImpostorGame() {
         currentPhraseIndex: -1,
         currentPhrase: "",
         correctPhrase: "",
+        previousCorrectPhrase: "", // Preserves the correct phrase from previous round for voting feedback
         hugoSubmission: "",
+        previousHugoSubmission: "", // Preserves Hugo's submission from previous round for voting feedback
         hugoTimeLeft: 60,
         hugoTimer: null,
         aiImpostorTimers: [],
@@ -59,7 +74,18 @@ function initializeImpostorGame() {
         isLastRound: false,
         currentDeadCharacter: -1,
         currentEjectedCharacter: -1,
-        actionInProgress: false
+        actionInProgress: false,
+        // Automated voting system state
+        automatedVotingActive: false,
+        votesNeededForHugo: 0,
+        votesCastForHugo: 0,
+        persistentVoters: [],
+        votingTimers: [],
+        individualVotes: {},
+        // Voting countdown timer state
+        votingTimeLeft: 20,
+        votingTimer: null,
+        maxVotingTime: 20
     };
 
     // Clear any existing intervals
@@ -220,6 +246,11 @@ function startPhraseCorrection() {
     }
 
     const selectedPair = phrasePairs[impostorGameState.currentPhraseIndex];
+
+    // Preserve the previous correct phrase and Hugo's submission for voting feedback before setting new ones
+    impostorGameState.previousCorrectPhrase = impostorGameState.correctPhrase;
+    impostorGameState.previousHugoSubmission = impostorGameState.hugoSubmission;
+
     impostorGameState.currentPhrase = selectedPair.impostor;
     impostorGameState.correctPhrase = selectedPair.correct;
 
@@ -444,20 +475,32 @@ function proceedToEmergencyMeeting() {
     updateImpostorDisplay();
 }
 
-// Calculate voting results based on grammar accuracy
+// Calculate voting results based on grammar accuracy using phrase analyzer
 function calculateVotingResults() {
-    const hugoAccuracy = calculatePhraseAccuracy(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
-    const errorsCount = impostorGameState.correctPhrase.length - hugoAccuracy;
+    // Use phrase analyzer to get detailed error analysis
+    const analysis = analyzePhraseComparison(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
+    const votesNeeded = analysis.totalVotes; // Direct vote count from errors
 
-    // Get all alive characters
-    const aliveCharacters = impostorGameState.characters.filter(c => c.alive && !c.ejected);
-    const aliveImpostors = aliveCharacters.filter(c => c.isImpostor);
+    // Store votes needed for automated voting system
+    impostorGameState.votesNeededForHugo = votesNeeded;
+    impostorGameState.votesCastForHugo = 0;
 
-    impostorGameState.votingResults = {};
+    // Reset individual votes tracking
+    impostorGameState.individualVotes = {};
+    impostorGameState.characters.forEach(char => {
+        impostorGameState.individualVotes[char.id] = [];
+    });
 
-    if (errorsCount === 0) {
-        // Perfect French - another impostor gets voted out
+    // Handle vote carryover from persistent voters (from previous rounds)
+    if (votesNeeded === 0) {
+        // Perfect French - clear persistent voters, vote out another impostor
+        impostorGameState.persistentVoters = [];
+
+        const aliveCharacters = impostorGameState.characters.filter(c => c.alive && !c.ejected);
+        const aliveImpostors = aliveCharacters.filter(c => c.isImpostor);
         const otherImpostors = aliveImpostors.filter(c => !c.isHugo);
+
+        impostorGameState.votingResults = {};
         if (otherImpostors.length > 0) {
             const scapegoat = otherImpostors[Math.floor(Math.random() * otherImpostors.length)];
             impostorGameState.votingResults[scapegoat.id] = aliveCharacters.length;
@@ -466,19 +509,181 @@ function calculateVotingResults() {
             impostorGameState.votingResults[impostorGameState.hugoId] = aliveCharacters.length;
         }
     } else {
-        // Distribute votes based on errors
-        impostorGameState.votingResults[impostorGameState.hugoId] = errorsCount;
+        // Hugo has errors - start automated voting system
+        startAutomatedVoting();
+    }
+}
 
-        // Distribute remaining votes among other impostors
-        const remainingVotes = aliveCharacters.length - errorsCount;
-        const otherImpostors = aliveImpostors.filter(c => !c.isHugo);
+// Start automated voting system
+function startAutomatedVoting() {
+    impostorGameState.automatedVotingActive = true;
+    impostorGameState.gamePhase = 'voting';
 
-        if (otherImpostors.length > 0 && remainingVotes > 0) {
-            otherImpostors.forEach(impostor => {
-                impostorGameState.votingResults[impostor.id] =
-                    Math.floor(remainingVotes / otherImpostors.length);
-            });
+    // Clear any existing voting timers
+    clearVotingTimers();
+
+    // Start the 20-second countdown timer
+    startVotingCountdown();
+
+    // If no votes needed, still show countdown but will finish when timer expires
+    if (impostorGameState.votesNeededForHugo === 0) {
+        updateImpostorDisplay(); // Update display to show voting countdown
+        return; // Let countdown timer finish the voting
+    }
+
+    // Schedule first vote after 5 seconds
+    const firstVoteTimer = setTimeout(() => {
+        castAutomatedVote();
+    }, 5000);
+
+    impostorGameState.votingTimers.push(firstVoteTimer);
+    updateImpostorDisplay(); // Update display to show voting in progress
+}
+
+// Cast an automated vote for Hugo
+function castAutomatedVote() {
+    if (!impostorGameState.automatedVotingActive || impostorGameState.votesCastForHugo >= impostorGameState.votesNeededForHugo) {
+        return;
+    }
+
+    // Get alive crewmates who can vote
+    const aliveCrewmates = impostorGameState.characters.filter(c =>
+        !c.isImpostor && c.alive && !c.ejected
+    );
+
+    if (aliveCrewmates.length === 0) {
+        // No crewmates left to vote
+        finishAutomatedVoting();
+        return;
+    }
+
+    // Select a random crewmate to vote for Hugo
+    const voter = aliveCrewmates[Math.floor(Math.random() * aliveCrewmates.length)];
+
+    // Add this crewmate to persistent voters (if not already there)
+    if (!impostorGameState.persistentVoters.includes(voter.id)) {
+        impostorGameState.persistentVoters.push(voter.id);
+    }
+
+    // Record the vote
+    if (!impostorGameState.individualVotes[impostorGameState.hugoId]) {
+        impostorGameState.individualVotes[impostorGameState.hugoId] = [];
+    }
+    impostorGameState.individualVotes[impostorGameState.hugoId].push({
+        voterId: voter.id,
+        voterColor: voter.color,
+        voterName: voter.name
+    });
+
+    impostorGameState.votesCastForHugo++;
+
+    // Update display to show new vote
+    updateImpostorDisplay();
+
+    // Check if we need more votes
+    if (impostorGameState.votesCastForHugo < impostorGameState.votesNeededForHugo) {
+        scheduleNextVote();
+    } else {
+        // All needed votes cast, finish voting
+        finishAutomatedVoting();
+    }
+}
+
+// Schedule the next vote with random delay
+function scheduleNextVote() {
+    if (!impostorGameState.automatedVotingActive) return;
+
+    // Random delay between 0-3 seconds
+    const delay = Math.random() * 3000;
+
+    const nextVoteTimer = setTimeout(() => {
+        castAutomatedVote();
+    }, delay);
+
+    impostorGameState.votingTimers.push(nextVoteTimer);
+}
+
+// Finish automated voting and transition to results
+function finishAutomatedVoting() {
+    impostorGameState.automatedVotingActive = false;
+    clearVotingTimers();
+    clearVotingCountdown();
+
+    // Set final voting results
+    impostorGameState.votingResults = {};
+    impostorGameState.votingResults[impostorGameState.hugoId] = impostorGameState.votesCastForHugo;
+
+    // Update game phase and proceed with existing logic
+    impostorGameState.gamePhase = 'emergency_meeting';
+
+    // Update display to hide countdown and show emergency meeting
+    updateImpostorDisplay();
+
+    // Wait a moment to show final vote tally, then proceed
+    setTimeout(() => {
+        voteOutCharacter();
+    }, 2000);
+}
+
+// Clear all voting timers
+function clearVotingTimers() {
+    impostorGameState.votingTimers.forEach(timer => clearTimeout(timer));
+    impostorGameState.votingTimers = [];
+}
+
+// Start voting countdown timer
+function startVotingCountdown() {
+    impostorGameState.votingTimeLeft = impostorGameState.maxVotingTime;
+
+    // Clear any existing voting countdown timer
+    if (impostorGameState.votingTimer) {
+        clearInterval(impostorGameState.votingTimer);
+    }
+
+    // Update display immediately
+    updateVotingCountdown();
+
+    // Start countdown timer
+    impostorGameState.votingTimer = setInterval(() => {
+        impostorGameState.votingTimeLeft--;
+        updateVotingCountdown();
+
+        if (impostorGameState.votingTimeLeft <= 0) {
+            finishVotingCountdown();
         }
+    }, 1000);
+}
+
+// Update voting countdown display
+function updateVotingCountdown() {
+    const countdownText = document.getElementById('votingCountdownText');
+    if (countdownText) {
+        if (impostorGameState.votingTimeLeft > 0) {
+            countdownText.textContent = `Voting Ends in: ${impostorGameState.votingTimeLeft}s`;
+        } else {
+            countdownText.textContent = `Finalizing votes...`;
+        }
+    }
+}
+
+// Finish voting countdown
+function finishVotingCountdown() {
+    if (impostorGameState.votingTimer) {
+        clearInterval(impostorGameState.votingTimer);
+        impostorGameState.votingTimer = null;
+    }
+
+    // End voting if still active
+    if (impostorGameState.automatedVotingActive) {
+        finishAutomatedVoting();
+    }
+}
+
+// Clear voting countdown timer
+function clearVotingCountdown() {
+    if (impostorGameState.votingTimer) {
+        clearInterval(impostorGameState.votingTimer);
+        impostorGameState.votingTimer = null;
     }
 }
 
@@ -587,6 +792,8 @@ function clearAllTimers() {
     }
 
     clearAITimers();
+    clearVotingTimers();
+    clearVotingCountdown();
 }
 
 // Clear AI timers
