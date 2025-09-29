@@ -409,6 +409,10 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     const victim = impostorGameState.characters.find(char => char.id === crewmateId);
     if (!victim || victim.isImpostor || !victim.alive || victim.ejected) return;
 
+    // Capture Hugo's current input before proceeding (same logic as submitCorrection)
+    const inputField = document.getElementById('phraseInput');
+    impostorGameState.hugoSubmission = inputField ? inputField.textContent.trim() : "";
+
     // Prevent multiple actions by setting action in progress
     impostorGameState.actionInProgress = true;
 
