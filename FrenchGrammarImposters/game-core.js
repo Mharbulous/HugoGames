@@ -99,7 +99,7 @@ function initializeGame() {
     // Show the emergency button to start the game
     document.getElementById('voteButtons').innerHTML = `
         <br><button class="emergency-meeting-btn" onclick="startFirstEmergencyMeeting()">
-            <img src="Emergency_button.png" alt="Emergency Meeting Button">
+            <img src="images/Emergency_button.png" alt="Emergency Meeting Button">
         </button>
         <p>Appuyez sur le bouton d'urgence pour commencer !</p>
     `;

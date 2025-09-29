@@ -129,7 +129,7 @@ function startSuspensefulReveal(votedCrewmate) {
         const aliveInnocents = gameState.crewmates.filter(c => !c.isImpostor && c.alive && !c.ejected).length;
 
         document.getElementById('voteButtons').innerHTML = `
-            <br><button class="emergency-meeting-btn" onclick="proceedToNextRound()"><img src="Emergency_button.png" alt="Emergency Meeting Button"></button>
+            <br><button class="emergency-meeting-btn" onclick="proceedToNextRound()"><img src="images/Emergency_button.png" alt="Emergency Meeting Button"></button>
             <br><br>
             <div class="game-stats">
                 <div class="stat">Imposteurs: <span id="impostorsLeft">${aliveImpostors}</span></div>

@@ -11,7 +11,8 @@
       "Bash(npm run test:phrase-analyzer:*)",
       "WebSearch",
       "WebFetch(domain:among-us.fandom.com)",
-      "WebFetch(domain:www.schemecolor.com)"
+      "WebFetch(domain:www.schemecolor.com)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

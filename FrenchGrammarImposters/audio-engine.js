@@ -78,7 +78,7 @@ function revealTextWithSync(element, text, onComplete) {
 
 function playEmergencyMeetingSound() {
     // Try to play the EmergencyMeetingSound.mp3 file
-    const audio = new Audio('EmergencyMeetingSound.mp3');
+    const audio = new Audio('sounds/EmergencyMeetingSound.mp3');
     audio.volume = 0.1;
     audio.play().catch(error => {
         console.log('Could not play emergency meeting sound:', error);
@@ -87,7 +87,7 @@ function playEmergencyMeetingSound() {
 
 function playVictorySound() {
     // Try to play the crewmate-victory.mp3 file
-    const audio = new Audio('crewmate-victory.mp3');
+    const audio = new Audio('sounds/crewmate-victory.mp3');
     audio.volume = 0.3;
     audio.play().catch(error => {
         console.log('Could not play victory sound:', error);
@@ -96,7 +96,7 @@ function playVictorySound() {
 
 function playImpostorVictorySound() {
     // Try to play the imposter-victory.mp3 file
-    const audio = new Audio('imposter-victory.mp3');
+    const audio = new Audio('sounds/imposter-victory.mp3');
     audio.volume = 0.1;
     audio.play().catch(error => {
         console.log('Could not play impostor victory sound:', error);
@@ -105,7 +105,7 @@ function playImpostorVictorySound() {
 
 function playKnifeStabSound() {
     // Try to play the knife_stab.mp3 file
-    const audio = new Audio('knife_stab.mp3');
+    const audio = new Audio('sounds/knife_stab.mp3');
     audio.volume = 0.5;
     audio.play().catch(error => {
         console.log('Could not play knife stab sound:', error);

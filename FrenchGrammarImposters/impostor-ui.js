@@ -145,10 +145,10 @@ function updateCharactersDisplay() {
         let buttonContent = '';
         if (impostorGameState.gamePhase === 'phrase_correction' && !character.isImpostor && character.alive && !character.ejected && !impostorGameState.actionInProgress) {
             // Eliminer buttons for crewmates during phrase correction
-            buttonContent = `<button class="vote-btn kill-btn" onclick="killCrewmate(${character.id})"><img src="knife.svg" alt="Knife" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Éliminer ${character.name}</button>`;
+            buttonContent = `<button class="vote-btn kill-btn" onclick="killCrewmate(${character.id})"><img src="images/knife.svg" alt="Knife" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Éliminer ${character.name}</button>`;
         } else if (impostorGameState.gamePhase === 'phrase_correction' && character.isImpostor && !isHugo && character.alive && !character.ejected && !impostorGameState.actionInProgress) {
             // Saboter buttons for living impostors (except Hugo) during phrase correction
-            buttonContent = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="sabotage.svg" alt="Sabotage" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
+            buttonContent = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="images/sabotage.svg" alt="Sabotage" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
         } else if ((impostorGameState.gamePhase === 'emergency_meeting' || impostorGameState.gamePhase === 'voting') && !impostorGameState.hasVoted && character.alive && !character.ejected && !isHugo) {
             // Vote buttons for all characters except Hugo (Hugo cannot vote for himself)
             buttonContent = `<button class="vote-btn ${votingDisabled ? 'voting-disabled' : ''}"
