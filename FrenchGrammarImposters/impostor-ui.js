@@ -535,7 +535,7 @@ function animateVictoryChase() {
 
     const startTime = performance.now();
     const startX = -100;
-    const endX = screenWidth + 100;
+    const endX = screenWidth + 100 + chaseOffset; // Add offset so impostor fully exits
     const totalDistance = endX - startX;
 
     function animate(currentTime) {

@@ -588,13 +588,10 @@ body::before {
 
 /* Victory and defeat message styles */
 .victory-message, .defeat-message {
-    background: rgba(26, 26, 46, 0.9);
-    border-radius: 15px;
     padding: 20px;
     margin: 20px auto;
     max-width: 400px;
     text-align: center;
-    border: 3px solid #4ecdc4;
 }
 
 .defeat-message {
@@ -653,12 +650,21 @@ body::before {
 }
 
 /* Impostor Victory: Laughing player alternating between crewmate/impostor */
-@keyframes laughSwitch {
+@keyframes laughSwitchCrewmate {
     0%, 100% {
         opacity: 1;
     }
     50% {
         opacity: 0;
+    }
+}
+
+@keyframes laughSwitchImpostor {
+    0%, 100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
     }
 }
 
@@ -683,11 +689,11 @@ body::before {
 }
 
 .impostor-laugh-layer.crewmate-layer {
-    animation: laughSwitch 0.4s ease-in-out infinite;
+    animation: laughSwitchCrewmate 0.4s ease-in-out infinite;
 }
 
 .impostor-laugh-layer.impostor-layer {
-    animation: laughSwitch 0.4s ease-in-out infinite reverse;
+    animation: laughSwitchImpostor 0.4s ease-in-out infinite;
 }
 
 /* Victory Chase Animation */
