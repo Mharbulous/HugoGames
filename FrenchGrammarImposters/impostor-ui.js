@@ -6,7 +6,6 @@ function updateImpostorDisplay() {
     updateTaskProgressBar();
     updateCharactersDisplay();
     updateGamePhaseDisplay();
-    scrollToHugo();
 
     // Re-initialize accent input after character display updates (Hugo's textarea may have been recreated)
     if (impostorGameState.gamePhase === 'phrase_correction') {
@@ -377,19 +376,6 @@ function updatePhraseCorrectionDisplay() {
     }
 }
 
-
-// Scroll to center Hugo's character
-function scrollToHugo() {
-    const hugoElement = document.querySelector(`[data-character-id="${impostorGameState.hugoId}"]`);
-    if (hugoElement) {
-        hugoElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center'
-        });
-    }
-}
-
 // Handle French accent input
 function setupAccentInput() {
     const phraseInput = document.getElementById('phraseInput');
@@ -449,14 +435,6 @@ function voteImpostorCharacter(characterId) {
     hugoVote(characterId);
 }
 
-// Handle window resize to maintain Hugo centering
-function setupWindowResize() {
-    let resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(scrollToHugo, 250);
-    });
-}
 
 // Animate ejected impostors floating across screen
 function animateEjectedImpostors() {

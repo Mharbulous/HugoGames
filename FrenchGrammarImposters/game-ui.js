@@ -89,10 +89,10 @@ function updateDisplay() {
     } else {
         if (gameState.currentDeadCrewmate !== -1) {
             const dead = gameState.crewmates[gameState.currentDeadCrewmate];
-            voteInstructions.innerHTML = `Un coéquipier est mort !<div class="dead-crewmate-display">
+            voteInstructions.innerHTML = `Un coéquipier est mort !<br><div class="dead-crewmate-display">
                 <div class="dead-crewmate-body-small" style="background-color: ${dead.color}">☠️</div>
                 <div style="color: ${dead.color === '#FFFFFF' || dead.color === '#F5F557' ? '#000' : '#FFF'}; font-weight: bold;">${dead.name}</div>
-            </div>Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.`;
+            </div><br>Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.`;
         } else {
             voteInstructions.innerHTML = 'Les imposteurs parlent français avec la grammaire anglaise.<br><br>Votez pour éliminer celui que vous pensez être un imposteur.';
         }
