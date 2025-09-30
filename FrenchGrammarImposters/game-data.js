@@ -113,12 +113,7 @@ const impostorConfig = {
     totalPlayers: 12,
     impostors: 5,
     crewmates: 7,
-    hugoTimeLimit: 60, // seconds
-    aiImpostorMinTime: 20, // seconds
-    aiImpostorMaxTime: 60, // seconds
     taskProgressTotal: 180, // seconds total across all rounds
-    killWindowBase: 10, // base seconds for kill opportunity
-    killWindowRandom: 20, // additional random seconds
     hugo: {
         name: 'Hugo',
         isPlayer: true

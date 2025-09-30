@@ -8,7 +8,7 @@ let impostorGameState = {
     hugoId: -1, // ID of Hugo's character
     round: 1,
     gameOver: false,
-    gamePhase: 'phrase_correction', // 'phrase_correction', 'kill_opportunity', 'emergency_meeting', 'voting', 'results'
+    gamePhase: 'phrase_correction', // 'phrase_correction', 'emergency_meeting', 'voting', 'results'
     taskProgress: 0, // Current task progress (0-180 seconds)
     taskProgressInterval: null,
     currentPhraseIndex: -1,
@@ -17,12 +17,6 @@ let impostorGameState = {
     previousCorrectPhrase: "", // Preserves the correct phrase from previous round for voting feedback
     hugoSubmission: "",
     previousHugoSubmission: "", // Preserves Hugo's submission from previous round for voting feedback
-    hugoTimeLeft: 60,
-    hugoTimer: null,
-    aiImpostorTimers: [],
-    killWindowTimeLeft: 0,
-    killTimer: null,
-    canKill: false,
     lastImpostorMode: false,
     votingResults: {},
     hasVoted: false,
@@ -36,11 +30,7 @@ let impostorGameState = {
     votesCastForHugo: 0,
     persistentVoters: [], // Crewmates that voted for Hugo and will continue voting
     votingTimers: [], // Timers for cleanup
-    individualVotes: {}, // Tracks votes per character with voter details
-    // Voting countdown timer state
-    votingTimeLeft: 20,
-    votingTimer: null,
-    maxVotingTime: 20
+    individualVotes: {} // Tracks votes per character with voter details
 };
 
 // Initialize impostor game
@@ -62,12 +52,6 @@ function initializeImpostorGame() {
         previousCorrectPhrase: "", // Preserves the correct phrase from previous round for voting feedback
         hugoSubmission: "",
         previousHugoSubmission: "", // Preserves Hugo's submission from previous round for voting feedback
-        hugoTimeLeft: 60,
-        hugoTimer: null,
-        aiImpostorTimers: [],
-        killWindowTimeLeft: 0,
-        killTimer: null,
-        canKill: false,
         lastImpostorMode: false,
         votingResults: {},
         hasVoted: false,
@@ -81,11 +65,7 @@ function initializeImpostorGame() {
         votesCastForHugo: 0,
         persistentVoters: [],
         votingTimers: [],
-        individualVotes: {},
-        // Voting countdown timer state
-        votingTimeLeft: 20,
-        votingTimer: null,
-        maxVotingTime: 20
+        individualVotes: {}
     };
 
     // Clear any existing intervals
@@ -258,71 +238,7 @@ function startPhraseCorrection() {
     const aliveImpostors = impostorGameState.characters.filter(c => c.isImpostor && c.alive && !c.ejected);
     impostorGameState.lastImpostorMode = aliveImpostors.length === 1 && aliveImpostors[0].isHugo;
 
-    // Start Hugo's timer (60 seconds, or no time limit if last impostor)
-    startHugoTimer();
-
-    // Start AI impostor timers if not in last impostor mode
-    if (!impostorGameState.lastImpostorMode) {
-        startAIImpostorTimers();
-    }
-
     updateImpostorDisplay();
-}
-
-// Start Hugo's correction timer
-function startHugoTimer() {
-    if (impostorGameState.lastImpostorMode) {
-        // No time pressure for last impostor
-        impostorGameState.hugoTimeLeft = -1;
-        return;
-    }
-
-    impostorGameState.hugoTimeLeft = impostorConfig.hugoTimeLimit;
-
-    if (impostorGameState.hugoTimer) {
-        clearInterval(impostorGameState.hugoTimer);
-    }
-
-    impostorGameState.hugoTimer = setInterval(() => {
-        impostorGameState.hugoTimeLeft--;
-        updateTimerDisplay();
-
-        if (impostorGameState.hugoTimeLeft <= 0) {
-            // Auto-submit whatever is in the text field
-            submitCorrection(true);
-        }
-    }, 1000);
-}
-
-// Start AI impostor timers
-function startAIImpostorTimers() {
-    impostorGameState.aiImpostorTimers = [];
-
-    const aliveAIImpostors = impostorGameState.characters.filter(c =>
-        c.isImpostor && !c.isHugo && c.alive && !c.ejected
-    );
-
-    aliveAIImpostors.forEach(impostor => {
-        const completionTime = impostorConfig.aiImpostorMinTime +
-                              Math.random() * (impostorConfig.aiImpostorMaxTime - impostorConfig.aiImpostorMinTime);
-
-        const timer = setTimeout(() => {
-            onAIImpostorComplete(impostor.id);
-        }, completionTime * 1000);
-
-        impostorGameState.aiImpostorTimers.push(timer);
-    });
-}
-
-// Handle AI impostor completion
-function onAIImpostorComplete(impostorId) {
-    if (impostorGameState.gamePhase !== 'phrase_correction') return;
-
-    // Check if Hugo has finished
-    if (impostorGameState.hugoSubmission !== "") {
-        // Hugo finished first - check for kill opportunity
-        checkKillOpportunity();
-    }
 }
 
 // Submit Hugo's correction
@@ -332,79 +248,15 @@ function submitCorrection(autoSubmit = false) {
     const inputField = document.getElementById('phraseInput');
     impostorGameState.hugoSubmission = inputField ? inputField.textContent.trim() : "";
 
-    // Clear Hugo's timer
-    if (impostorGameState.hugoTimer) {
-        clearInterval(impostorGameState.hugoTimer);
-        impostorGameState.hugoTimer = null;
-    }
-
-    // Clear AI impostor timers since Hugo submitted
-    clearAITimers();
-
-    // Proceed directly to emergency meeting (kill opportunity is now merged with phrase correction)
+    // Proceed directly to emergency meeting
     proceedToEmergencyMeeting();
 }
 
-// Check for kill opportunity
-function checkKillOpportunity() {
-    const aliveCrewmates = impostorGameState.characters.filter(c =>
-        !c.isImpostor && c.alive && !c.ejected
-    );
-
-    if (aliveCrewmates.length === 0) {
-        // No crewmates left to kill
-        proceedToEmergencyMeeting();
-        return;
-    }
-
-    impostorGameState.gamePhase = 'kill_opportunity';
-    impostorGameState.canKill = true;
-
-    // Calculate kill window duration
-    const aliveImpostors = impostorGameState.characters.filter(c =>
-        c.isImpostor && c.alive && !c.ejected
-    ).length;
-
-    impostorGameState.killWindowTimeLeft = impostorConfig.killWindowBase +
-                                          Math.random() * impostorConfig.killWindowRandom -
-                                          aliveImpostors;
-
-    impostorGameState.killWindowTimeLeft = Math.max(5, impostorGameState.killWindowTimeLeft);
-
-    // Start kill window timer
-    impostorGameState.killTimer = setInterval(() => {
-        impostorGameState.killWindowTimeLeft--;
-        updateKillTimerDisplay();
-
-        if (impostorGameState.killWindowTimeLeft <= 0) {
-            // Time's up - AI impostors might kill instead
-            handleAIImpostorKill();
-        }
-    }, 1000);
-
-    updateImpostorDisplay();
-}
-
-// Handle AI impostor kill when Hugo doesn't act
-function handleAIImpostorKill() {
-    if (!impostorGameState.canKill) return;
-
-    const aliveCrewmates = impostorGameState.characters.filter(c =>
-        !c.isImpostor && c.alive && !c.ejected
-    );
-
-    if (aliveCrewmates.length > 0) {
-        const victim = aliveCrewmates[Math.floor(Math.random() * aliveCrewmates.length)];
-        killCrewmate(victim.id, false);
-    } else {
-        proceedToEmergencyMeeting();
-    }
-}
 
 // Kill a crewmate
 function killCrewmate(crewmateId, killedByHugo = true) {
-    // Allow killing during phrase_correction phase (merged functionality)
-    if (impostorGameState.gamePhase !== 'phrase_correction' && impostorGameState.gamePhase !== 'kill_opportunity') return;
+    // Allow killing during phrase_correction phase
+    if (impostorGameState.gamePhase !== 'phrase_correction') return;
 
     const victim = impostorGameState.characters.find(char => char.id === crewmateId);
     if (!victim || victim.isImpostor || !victim.alive || victim.ejected) return;
@@ -432,23 +284,6 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Update display immediately to show dead crewmate
     updateImpostorDisplay();
 
-    // Clear Hugo's phrase correction timer since killing ends the phase
-    if (impostorGameState.hugoTimer) {
-        clearInterval(impostorGameState.hugoTimer);
-        impostorGameState.hugoTimer = null;
-    }
-
-    // Clear kill timer
-    if (impostorGameState.killTimer) {
-        clearInterval(impostorGameState.killTimer);
-        impostorGameState.killTimer = null;
-    }
-
-    impostorGameState.canKill = false;
-
-    // Clear AI impostor timers
-    clearAITimers();
-
     // Play emergency meeting sound after 2-second delay
     setTimeout(() => {
         playEmergencyMeetingSound();
@@ -469,9 +304,6 @@ function proceedToEmergencyMeeting() {
 
     // Reset action state for voting phase
     impostorGameState.actionInProgress = false;
-
-    // Clear any remaining timers
-    clearAITimers();
 
     // Calculate voting results based on Hugo's phrase accuracy
     calculateVotingResults();
@@ -526,13 +358,11 @@ function startAutomatedVoting() {
     // Clear any existing voting timers
     clearVotingTimers();
 
-    // Start the 20-second countdown timer
-    startVotingCountdown();
-
-    // If no votes needed, still show countdown but will finish when timer expires
+    // If no votes needed, finish immediately
     if (impostorGameState.votesNeededForHugo === 0) {
-        updateImpostorDisplay(); // Update display to show voting countdown
-        return; // Let countdown timer finish the voting
+        updateImpostorDisplay();
+        finishAutomatedVoting();
+        return;
     }
 
     // Schedule first vote after 5 seconds
@@ -611,7 +441,6 @@ function scheduleNextVote() {
 function finishAutomatedVoting() {
     impostorGameState.automatedVotingActive = false;
     clearVotingTimers();
-    clearVotingCountdown();
 
     // Set final voting results
     impostorGameState.votingResults = {};
@@ -620,7 +449,7 @@ function finishAutomatedVoting() {
     // Update game phase and proceed with existing logic
     impostorGameState.gamePhase = 'emergency_meeting';
 
-    // Update display to hide countdown and show emergency meeting
+    // Update display to show emergency meeting
     updateImpostorDisplay();
 
     // Wait a moment to show final vote tally, then proceed
@@ -633,62 +462,6 @@ function finishAutomatedVoting() {
 function clearVotingTimers() {
     impostorGameState.votingTimers.forEach(timer => clearTimeout(timer));
     impostorGameState.votingTimers = [];
-}
-
-// Start voting countdown timer
-function startVotingCountdown() {
-    impostorGameState.votingTimeLeft = impostorGameState.maxVotingTime;
-
-    // Clear any existing voting countdown timer
-    if (impostorGameState.votingTimer) {
-        clearInterval(impostorGameState.votingTimer);
-    }
-
-    // Update display immediately
-    updateVotingCountdown();
-
-    // Start countdown timer
-    impostorGameState.votingTimer = setInterval(() => {
-        impostorGameState.votingTimeLeft--;
-        updateVotingCountdown();
-
-        if (impostorGameState.votingTimeLeft <= 0) {
-            finishVotingCountdown();
-        }
-    }, 1000);
-}
-
-// Update voting countdown display
-function updateVotingCountdown() {
-    const countdownText = document.getElementById('votingCountdownText');
-    if (countdownText) {
-        if (impostorGameState.votingTimeLeft > 0) {
-            countdownText.textContent = `Voting Ends in: ${impostorGameState.votingTimeLeft}s`;
-        } else {
-            countdownText.textContent = `Finalizing votes...`;
-        }
-    }
-}
-
-// Finish voting countdown
-function finishVotingCountdown() {
-    if (impostorGameState.votingTimer) {
-        clearInterval(impostorGameState.votingTimer);
-        impostorGameState.votingTimer = null;
-    }
-
-    // End voting if still active
-    if (impostorGameState.automatedVotingActive) {
-        finishAutomatedVoting();
-    }
-}
-
-// Clear voting countdown timer
-function clearVotingCountdown() {
-    if (impostorGameState.votingTimer) {
-        clearInterval(impostorGameState.votingTimer);
-        impostorGameState.votingTimer = null;
-    }
 }
 
 // Note: Character comparison functions moved to phrase-analyzer.js
@@ -780,30 +553,12 @@ function endGameTasksCompleted() {
 
 // Clear all timers
 function clearAllTimers() {
-    if (impostorGameState.hugoTimer) {
-        clearInterval(impostorGameState.hugoTimer);
-        impostorGameState.hugoTimer = null;
-    }
-
-    if (impostorGameState.killTimer) {
-        clearInterval(impostorGameState.killTimer);
-        impostorGameState.killTimer = null;
-    }
-
     if (impostorGameState.taskProgressInterval) {
         clearInterval(impostorGameState.taskProgressInterval);
         impostorGameState.taskProgressInterval = null;
     }
 
-    clearAITimers();
     clearVotingTimers();
-    clearVotingCountdown();
-}
-
-// Clear AI timers
-function clearAITimers() {
-    impostorGameState.aiImpostorTimers.forEach(timer => clearTimeout(timer));
-    impostorGameState.aiImpostorTimers = [];
 }
 
 // Start new impostor game

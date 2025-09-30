@@ -507,51 +507,6 @@ body::before {
     transform: translateY(-2px);
 }
 
-/* Kill Opportunity Styles */
-.kill-opportunity-area {
-    background: rgba(255, 107, 107, 0.2);
-    border: 3px solid #ff6b6b;
-    border-radius: 15px;
-    padding: 20px;
-    margin: 20px auto;
-    max-width: 600px;
-    text-align: center;
-}
-
-.kill-title {
-    color: #ff6b6b;
-    font-size: 1.5em;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.kill-instructions {
-    color: white;
-    margin-bottom: 15px;
-}
-
-.kill-timer {
-    color: #ff6b6b;
-    font-size: 1.2em;
-    font-weight: bold;
-}
-
-.kill-btn {
-    background: linear-gradient(135deg, #ff6b6b, #ff4757);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 15px;
-    margin-top: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: transform 0.2s;
-}
-
-.kill-btn:hover {
-    transform: translateY(-2px);
-}
-
 /* Character-specific styles */
 .hugo-character {
     border-color: #F5F5F5 !important;
@@ -669,19 +624,3 @@ body::before {
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
 }
 
-/* Voting countdown timer */
-.voting-countdown-container {
-    width: 100%;
-    text-align: center;
-    margin: 20px auto;
-}
-
-.voting-countdown-bar {
-    padding: 0;
-}
-
-.voting-countdown-text {
-    color: white;
-    font-size: 1.2em;
-    font-weight: normal;
-}

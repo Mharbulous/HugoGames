@@ -12,7 +12,8 @@
       "WebSearch",
       "WebFetch(domain:among-us.fandom.com)",
       "WebFetch(domain:www.schemecolor.com)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

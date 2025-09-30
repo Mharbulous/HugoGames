@@ -6,7 +6,6 @@ function updateImpostorDisplay() {
     updateTaskProgressBar();
     updateCharactersDisplay();
     updateGamePhaseDisplay();
-    updateTimerDisplay();
     scrollToHugo();
 
     // Re-initialize accent input after character display updates (Hugo's textarea may have been recreated)
@@ -20,35 +19,26 @@ function updateImpostorDisplay() {
 // Update task progress bar
 function updateTaskProgressBar() {
     const taskProgressContainer = document.getElementById('taskProgressContainer');
-    const votingCountdownContainer = document.getElementById('votingCountdownContainer');
 
-    // Toggle between task progress and voting countdown based on game phase
-    if (impostorGameState.gamePhase === 'voting') {
-        // Hide task progress, show voting countdown
-        if (taskProgressContainer) taskProgressContainer.style.display = 'none';
-        if (votingCountdownContainer) votingCountdownContainer.style.display = 'block';
-    } else {
-        // Show task progress, hide voting countdown
-        if (taskProgressContainer) taskProgressContainer.style.display = 'block';
-        if (votingCountdownContainer) votingCountdownContainer.style.display = 'none';
+    // Always show task progress bar
+    if (taskProgressContainer) taskProgressContainer.style.display = 'block';
 
-        // Update task progress bar normally
-        const progressPercent = Math.min(100, (impostorGameState.taskProgress / impostorConfig.taskProgressTotal) * 100);
-        const progressFill = document.getElementById('taskProgressFill');
-        const taskPercentage = document.getElementById('taskPercentage');
-        const taskWarning = document.getElementById('taskWarning');
+    // Update task progress bar
+    const progressPercent = Math.min(100, (impostorGameState.taskProgress / impostorConfig.taskProgressTotal) * 100);
+    const progressFill = document.getElementById('taskProgressFill');
+    const taskPercentage = document.getElementById('taskPercentage');
+    const taskWarning = document.getElementById('taskWarning');
 
-        if (progressFill) {
-            progressFill.style.width = `${progressPercent}%`;
-        }
+    if (progressFill) {
+        progressFill.style.width = `${progressPercent}%`;
+    }
 
-        if (taskPercentage) {
-            taskPercentage.textContent = `${Math.round(progressPercent)}%`;
-        }
+    if (taskPercentage) {
+        taskPercentage.textContent = `${Math.round(progressPercent)}%`;
+    }
 
-        if (taskWarning) {
-            taskWarning.style.display = progressPercent > 75 ? 'block' : 'none';
-        }
+    if (taskWarning) {
+        taskWarning.style.display = progressPercent > 75 ? 'block' : 'none';
     }
 }
 
@@ -198,14 +188,12 @@ function updateCharactersDisplay() {
 // Update game phase specific displays
 function updateGamePhaseDisplay() {
     const accentHelpCard = document.getElementById('accentHelpCard');
-    const killOpportunityArea = document.getElementById('killOpportunityArea');
     const voteTitle = document.getElementById('voteTitle');
     const voteInstructions = document.getElementById('voteInstructions');
     const voteButtons = document.getElementById('voteButtons');
 
     // Hide all phase-specific areas first
     if (accentHelpCard) accentHelpCard.style.display = 'none';
-    if (killOpportunityArea) killOpportunityArea.style.display = 'none';
 
     switch (impostorGameState.gamePhase) {
         case 'phrase_correction':
@@ -316,21 +304,6 @@ function updatePhraseCorrectionDisplay() {
     }
 }
 
-// Update timer displays
-function updateTimerDisplay() {
-    const killTimer = document.getElementById('killTimer');
-
-    // Update kill timer
-    if (killTimer && impostorGameState.gamePhase === 'kill_opportunity') {
-        killTimer.textContent = `${Math.ceil(impostorGameState.killWindowTimeLeft)}s`;
-        killTimer.style.color = impostorGameState.killWindowTimeLeft <= 5 ? '#ff6b6b' : '#4ecdc4';
-    }
-}
-
-// Update kill timer display
-function updateKillTimerDisplay() {
-    updateTimerDisplay();
-}
 
 // Scroll to center Hugo's character
 function scrollToHugo() {
@@ -387,11 +360,10 @@ function setupAccentInput() {
         }
     });
 
-    // Handle Enter key to submit
+    // Disable Enter key completely (no line breaks, no submission)
     phraseInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter') {
             event.preventDefault();
-            submitCorrection();
         }
     });
 }
