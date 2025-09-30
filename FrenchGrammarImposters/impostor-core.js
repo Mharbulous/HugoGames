@@ -687,6 +687,10 @@ function endGameHugoEjected() {
     impostorGameState.gameOver = true;
     impostorGameState.gamePhase = 'game_over';
     clearAllTimers();
+
+    // Play crewmate victory sound
+    playVictorySound();
+
     updateImpostorDisplay();
 }
 
@@ -695,6 +699,10 @@ function endGameImpostorVictory() {
     impostorGameState.gameOver = true;
     impostorGameState.gamePhase = 'impostor_victory';
     clearAllTimers();
+
+    // Play impostor victory sound
+    playImpostorVictorySound();
+
     updateImpostorDisplay();
 }
 
@@ -703,6 +711,10 @@ function endGameTasksCompleted() {
     impostorGameState.gameOver = true;
     impostorGameState.gamePhase = 'tasks_completed';
     clearAllTimers();
+
+    // Play crewmate victory sound
+    playVictorySound();
+
     updateImpostorDisplay();
 }
 

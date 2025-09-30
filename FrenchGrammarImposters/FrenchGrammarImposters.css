@@ -624,3 +624,66 @@ body::before {
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
 }
 
+/* ========== END GAME ANIMATIONS ========== */
+
+/* Crewmate Victory: Spinning ejected impostors floating across space */
+.ejected-impostor-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.ejected-impostor {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+}
+
+.ejected-impostor svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Impostor Victory: Laughing player alternating between crewmate/impostor */
+@keyframes laughSwitch {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+.impostor-laugh-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 30px auto;
+}
+
+.impostor-laugh-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.impostor-laugh-layer svg {
+    width: 100%;
+    height: 100%;
+}
+
+.impostor-laugh-layer.crewmate-layer {
+    animation: laughSwitch 0.4s ease-in-out infinite;
+}
+
+.impostor-laugh-layer.impostor-layer {
+    animation: laughSwitch 0.4s ease-in-out infinite reverse;
+}
+
