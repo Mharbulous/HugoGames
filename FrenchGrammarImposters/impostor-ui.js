@@ -444,7 +444,7 @@ function setupWindowResize() {
     });
 }
 
-// Animate ejected impostors with deceleration and shrinking effect
+// Animate ejected impostors floating across screen
 function animateEjectedImpostors() {
     const container = document.querySelector('.ejected-impostor-container');
     if (!container) return;
@@ -454,10 +454,9 @@ function animateEjectedImpostors() {
     const startPositions = [10, 30, 50, 70, 85]; // Vertical positions in %
     const delays = [0, 500, 1000, 1500, 2000]; // Stagger delays in ms
 
-    // Base velocity in pixels per second (30x slower than before)
-    // Original was ~screenWidth pixels in 10 seconds = screenWidth/10 px/s
-    // New speed is 30x slower = screenWidth/300 px/s
-    const baseVelocity = screenWidth / 300;
+    // Simple constants
+    const totalDuration = 60000; // 60 seconds to cross screen
+    const rotationPeriod = 5000; // One full rotation every 5 seconds
 
     impostorElements.forEach((element, index) => {
         const verticalPosition = startPositions[index] || 50;
@@ -469,47 +468,28 @@ function animateEjectedImpostors() {
         // Start animation after delay
         setTimeout(() => {
             const startTime = performance.now();
-            let lastTime = startTime;
-            let currentPosition = -100; // Start position in pixels
-            let totalRotation = 0; // Track total rotation
-
             const startX = -100;
             const endX = screenWidth + 100;
             const totalDistance = endX - startX;
 
             function animate(currentTime) {
-                // Calculate delta time in seconds
-                const deltaTime = (currentTime - lastTime) / 1000;
-                lastTime = currentTime;
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / totalDuration, 1);
 
-                // Calculate position percentage (0 to 1)
-                const positionPercent = Math.min((currentPosition - startX) / totalDistance, 1);
+                // Calculate position (linear interpolation)
+                const currentX = startX + (totalDistance * progress);
 
-                // Calculate speed multiplier based on current position (1 at start, decreases to 0.2)
-                const speedMultiplier = Math.max(0.2, 1 - (0.8 * positionPercent));
+                // Calculate rotation (one full rotation every 5 seconds, counterclockwise)
+                const rotation = -360 * (elapsed / rotationPeriod);
 
-                // Calculate velocity based on current position
-                const velocity = baseVelocity * speedMultiplier;
-
-                // Update position based on velocity
-                currentPosition += velocity * deltaTime * 1000; // Convert back to ms scale
-
-                // Calculate size (80px at start, decreases proportionally)
-                const size = 80 * speedMultiplier;
-
-                // Calculate rotation based on distance traveled (continuous spin)
-                // Rotate proportionally to velocity for consistent visual spin
-                const rotationSpeed = 360 / 10; // 360 degrees per 10 seconds at full speed
-                totalRotation -= rotationSpeed * speedMultiplier * deltaTime;
-
-                // Apply transforms (no fade effects)
-                element.style.transform = `translate(${currentPosition}px, -50%) rotate(${totalRotation}deg)`;
-                element.style.width = `${size}px`;
-                element.style.height = `${size}px`;
+                // Apply transforms
+                element.style.transform = `translate(${currentX}px, -50%) rotate(${rotation}deg)`;
+                element.style.width = '80px';
+                element.style.height = '80px';
                 element.style.opacity = 1;
 
                 // Continue animation if not complete
-                if (currentPosition < endX) {
+                if (progress < 1) {
                     requestAnimationFrame(animate);
                 }
             }
