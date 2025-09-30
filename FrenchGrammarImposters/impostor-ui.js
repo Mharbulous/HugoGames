@@ -139,9 +139,10 @@ function updateCharactersDisplay() {
         } else if (impostorGameState.gamePhase === 'phrase_correction' && character.isImpostor && !isHugo && character.alive && !character.ejected && !impostorGameState.actionInProgress) {
             // Saboter buttons for living impostors (except Hugo) during phrase correction
             buttonContent = `<button class="hugo-submit-btn" onclick="submitCorrection()"><img src="images/sabotage.svg" alt="Sabotage" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">Saboter</button>`;
-        } else if ((impostorGameState.gamePhase === 'emergency_meeting' || impostorGameState.gamePhase === 'voting') && !impostorGameState.hasVoted && character.alive && !character.ejected && !isHugo) {
+        } else if (impostorGameState.gamePhase === 'voting' && !impostorGameState.hasVoted && character.alive && !character.ejected && !isHugo) {
             // Vote buttons for all characters except Hugo (Hugo cannot vote for himself)
-            buttonContent = `<button class="vote-btn ${votingDisabled ? 'voting-disabled' : ''}"
+            // Only show during 'voting' phase (not 'emergency_meeting')
+            buttonContent = `<button class="vote-btn"
                 style="background-color: ${character.color}; color: ${character.color === '#FFFFFF' || character.color === '#F5F557' ? '#000' : '#FFF'}"
                 onclick="voteImpostorCharacter(${character.id})" ${!character.alive || character.ejected || impostorGameState.gameOver ? 'disabled' : ''}>
                 Voter ${character.name}
@@ -370,16 +371,10 @@ function setupAccentInput() {
 
 // Vote for a character in impostor mode
 function voteImpostorCharacter(characterId) {
-    if (impostorGameState.hasVoted || (impostorGameState.gamePhase !== 'emergency_meeting' && impostorGameState.gamePhase !== 'voting')) return;
+    if (impostorGameState.hasVoted || impostorGameState.gamePhase !== 'voting') return;
 
-    impostorGameState.hasVoted = true;
-
-    // Process the vote
-    setTimeout(() => {
-        voteOutCharacter();
-    }, 1000);
-
-    updateImpostorDisplay();
+    // Call the new hugoVote function which handles Phase 3, 4, and 5
+    hugoVote(characterId);
 }
 
 // Handle window resize to maintain Hugo centering

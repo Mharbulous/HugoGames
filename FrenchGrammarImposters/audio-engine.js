@@ -103,11 +103,28 @@ function playImpostorVictorySound() {
     });
 }
 
-function playKnifeStabSound() {
+function playKnifeStabSound(onComplete) {
     // Try to play the knife_stab.mp3 file
     const audio = new Audio('sounds/knife_stab.mp3');
     audio.volume = 0.5;
+
+    // Call onComplete callback when sound finishes
+    if (onComplete) {
+        audio.onended = onComplete;
+    }
+
     audio.play().catch(error => {
         console.log('Could not play knife stab sound:', error);
+        // Call onComplete even on error so game flow continues
+        if (onComplete) onComplete();
+    });
+}
+
+function playDeadBodyReportedSound() {
+    // Try to play the among-us-dead-body-reported.mp3 file
+    const audio = new Audio('sounds/among-us-dead-body-reported.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(error => {
+        console.log('Could not play dead body reported sound:', error);
     });
 }

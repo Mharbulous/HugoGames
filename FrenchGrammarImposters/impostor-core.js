@@ -24,12 +24,11 @@ let impostorGameState = {
     currentDeadCharacter: -1, // Track most recently killed character
     currentEjectedCharacter: -1, // Track most recently ejected character
     actionInProgress: false, // Track if kill/sabotage action is in progress
-    // Automated voting system state
-    automatedVotingActive: false,
-    votesNeededForHugo: 0,
-    votesCastForHugo: 0,
-    persistentVoters: [], // Crewmates that voted for Hugo and will continue voting
-    votingTimers: [], // Timers for cleanup
+    // New voting system state
+    hugoSuspectors: [], // Crewmates that voted for Hugo and will continue voting until Hugo has perfect phrase
+    randomImpostorTarget: -1, // The impostor receiving Phase 2 votes
+    impostorSuspectors: [], // Crewmates voting for random impostor
+    hugoVoteTarget: -1, // Who Hugo voted for
     individualVotes: {} // Tracks votes per character with voter details
 };
 
@@ -59,12 +58,11 @@ function initializeImpostorGame() {
         currentDeadCharacter: -1,
         currentEjectedCharacter: -1,
         actionInProgress: false,
-        // Automated voting system state
-        automatedVotingActive: false,
-        votesNeededForHugo: 0,
-        votesCastForHugo: 0,
-        persistentVoters: [],
-        votingTimers: [],
+        // New voting system state
+        hugoSuspectors: [],
+        randomImpostorTarget: -1,
+        impostorSuspectors: [],
+        hugoVoteTarget: -1,
         individualVotes: {}
     };
 
@@ -271,8 +269,10 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Update display immediately to hide all action buttons
     updateImpostorDisplay();
 
-    // Play knife stab sound effect
-    playKnifeStabSound();
+    // Play knife stab sound effect, then dead body reported sound
+    playKnifeStabSound(() => {
+        playDeadBodyReportedSound();
+    });
 
     victim.alive = false;
     victim.deathPhrase = getRandomDeathPhrase('violent');
@@ -284,15 +284,8 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Update display immediately to show dead crewmate
     updateImpostorDisplay();
 
-    // Play emergency meeting sound after 2-second delay
-    setTimeout(() => {
-        playEmergencyMeetingSound();
-    }, 2000);
-
-    // Proceed to emergency meeting
-    setTimeout(() => {
-        proceedToEmergencyMeeting();
-    }, 3000);
+    // Proceed to emergency meeting immediately
+    proceedToEmergencyMeeting();
 }
 
 // Proceed to emergency meeting
@@ -313,155 +306,274 @@ function proceedToEmergencyMeeting() {
 
 // Calculate voting results based on grammar accuracy using phrase analyzer
 function calculateVotingResults() {
-    // Use phrase analyzer to get detailed error analysis
-    const analysis = analyzePhraseComparison(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
-    const votesNeeded = analysis.totalVotes; // Direct vote count from errors
-
-    // Store votes needed for automated voting system
-    impostorGameState.votesNeededForHugo = votesNeeded;
-    impostorGameState.votesCastForHugo = 0;
-
     // Reset individual votes tracking
     impostorGameState.individualVotes = {};
     impostorGameState.characters.forEach(char => {
         impostorGameState.individualVotes[char.id] = [];
     });
 
-    // Handle vote carryover from persistent voters (from previous rounds)
-    if (votesNeeded === 0) {
-        // Perfect French - clear persistent voters, vote out another impostor
-        impostorGameState.persistentVoters = [];
+    // Reset voting state
+    impostorGameState.hasVoted = false;
+    impostorGameState.hugoVoteTarget = -1;
+    impostorGameState.randomImpostorTarget = -1;
+    impostorGameState.impostorSuspectors = [];
 
-        const aliveCharacters = impostorGameState.characters.filter(c => c.alive && !c.ejected);
-        const aliveImpostors = aliveCharacters.filter(c => c.isImpostor);
-        const otherImpostors = aliveImpostors.filter(c => !c.isHugo);
-
-        impostorGameState.votingResults = {};
-        if (otherImpostors.length > 0) {
-            const scapegoat = otherImpostors[Math.floor(Math.random() * otherImpostors.length)];
-            impostorGameState.votingResults[scapegoat.id] = aliveCharacters.length;
-        } else {
-            // Only Hugo left - he gets voted out
-            impostorGameState.votingResults[impostorGameState.hugoId] = aliveCharacters.length;
-        }
-    } else {
-        // Hugo has errors - start automated voting system
-        startAutomatedVoting();
-    }
+    // Start Phase 1 and 2 voting (automated crewmate suspicions)
+    executePhase1And2Voting();
 }
 
-// Start automated voting system
-function startAutomatedVoting() {
-    impostorGameState.automatedVotingActive = true;
-    impostorGameState.gamePhase = 'voting';
-
-    // Clear any existing voting timers
-    clearVotingTimers();
-
-    // If no votes needed, finish immediately
-    if (impostorGameState.votesNeededForHugo === 0) {
-        updateImpostorDisplay();
-        finishAutomatedVoting();
-        return;
-    }
-
-    // Schedule first vote after 5 seconds
-    const firstVoteTimer = setTimeout(() => {
-        castAutomatedVote();
-    }, 5000);
-
-    impostorGameState.votingTimers.push(firstVoteTimer);
-    updateImpostorDisplay(); // Update display to show voting in progress
-}
-
-// Cast an automated vote for Hugo
-function castAutomatedVote() {
-    if (!impostorGameState.automatedVotingActive || impostorGameState.votesCastForHugo >= impostorGameState.votesNeededForHugo) {
-        return;
-    }
-
-    // Get alive crewmates who can vote
+// PHASE 1 & 2: Assign crewmate votes to Hugo and random impostor based on errors
+function executePhase1And2Voting() {
+    // Get alive characters
     const aliveCrewmates = impostorGameState.characters.filter(c =>
         !c.isImpostor && c.alive && !c.ejected
     );
+    const aliveImpostors = impostorGameState.characters.filter(c =>
+        c.isImpostor && c.alive && !c.ejected && !c.isHugo
+    );
 
-    if (aliveCrewmates.length === 0) {
-        // No crewmates left to vote
-        finishAutomatedVoting();
-        return;
+    // PHASE 1: Hugo error votes
+    const hugoAnalysis = analyzePhraseComparison(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
+    const hugoErrorCount = hugoAnalysis.totalVotes;
+
+    if (hugoErrorCount === 0) {
+        // Hugo has perfect phrase - clear persistent suspectors
+        impostorGameState.hugoSuspectors = [];
+    } else {
+        // Assign new suspectors if needed (carry over existing + add new until we reach error count)
+        const neededSuspectors = hugoErrorCount;
+
+        // Filter out any suspectors who are no longer alive
+        impostorGameState.hugoSuspectors = impostorGameState.hugoSuspectors.filter(id => {
+            const char = impostorGameState.characters.find(c => c.id === id);
+            return char && char.alive && !char.ejected && !char.isImpostor;
+        });
+
+        // Add more suspectors if we need them
+        while (impostorGameState.hugoSuspectors.length < neededSuspectors && aliveCrewmates.length > 0) {
+            // Find crewmates not already suspecting Hugo
+            const availableCrewmates = aliveCrewmates.filter(c =>
+                !impostorGameState.hugoSuspectors.includes(c.id)
+            );
+
+            if (availableCrewmates.length === 0) break;
+
+            const newSuspector = availableCrewmates[Math.floor(Math.random() * availableCrewmates.length)];
+            impostorGameState.hugoSuspectors.push(newSuspector.id);
+        }
     }
 
-    // Select a random crewmate to vote for Hugo
-    const voter = aliveCrewmates[Math.floor(Math.random() * aliveCrewmates.length)];
-
-    // Add this crewmate to persistent voters (if not already there)
-    if (!impostorGameState.persistentVoters.includes(voter.id)) {
-        impostorGameState.persistentVoters.push(voter.id);
+    // Cast votes from Hugo suspectors
+    for (const suspectorId of impostorGameState.hugoSuspectors) {
+        const suspector = impostorGameState.characters.find(c => c.id === suspectorId);
+        if (suspector) {
+            impostorGameState.individualVotes[impostorGameState.hugoId].push({
+                voterId: suspector.id,
+                voterColor: suspector.color,
+                voterName: suspector.name
+            });
+        }
     }
 
-    // Record the vote
-    if (!impostorGameState.individualVotes[impostorGameState.hugoId]) {
-        impostorGameState.individualVotes[impostorGameState.hugoId] = [];
+    // PHASE 2: Random impostor error votes (only if there are other impostors alive)
+    if (aliveImpostors.length > 0) {
+        // Select random impostor
+        const randomImpostor = aliveImpostors[Math.floor(Math.random() * aliveImpostors.length)];
+        impostorGameState.randomImpostorTarget = randomImpostor.id;
+
+        // Calculate errors in that impostor's phrase
+        const impostorAnalysis = analyzePhraseComparison(randomImpostor.phrase, randomImpostor.correctPhrase);
+        const impostorErrorCount = impostorAnalysis.totalVotes;
+
+        // Assign crewmate votes (excluding Hugo suspectors)
+        const availableCrewmates = aliveCrewmates.filter(c =>
+            !impostorGameState.hugoSuspectors.includes(c.id)
+        );
+
+        const suspectorCount = Math.min(impostorErrorCount, availableCrewmates.length);
+        for (let i = 0; i < suspectorCount; i++) {
+            const suspector = availableCrewmates[i];
+            impostorGameState.impostorSuspectors.push(suspector.id);
+
+            if (!impostorGameState.individualVotes[randomImpostor.id]) {
+                impostorGameState.individualVotes[randomImpostor.id] = [];
+            }
+            impostorGameState.individualVotes[randomImpostor.id].push({
+                voterId: suspector.id,
+                voterColor: suspector.color,
+                voterName: suspector.name
+            });
+        }
     }
-    impostorGameState.individualVotes[impostorGameState.hugoId].push({
-        voterId: voter.id,
-        voterColor: voter.color,
-        voterName: voter.name
+
+    // Transition to voting phase where Hugo can vote
+    impostorGameState.gamePhase = 'voting';
+    updateImpostorDisplay();
+}
+
+// PHASE 3: Hugo casts vote (triggered by UI), then impostors follow
+function hugoVote(targetId) {
+    if (impostorGameState.hasVoted) return;
+
+    impostorGameState.hasVoted = true;
+    impostorGameState.hugoVoteTarget = targetId;
+
+    // Record Hugo's vote
+    const hugo = impostorGameState.characters.find(c => c.id === impostorGameState.hugoId);
+    if (!impostorGameState.individualVotes[targetId]) {
+        impostorGameState.individualVotes[targetId] = [];
+    }
+    impostorGameState.individualVotes[targetId].push({
+        voterId: hugo.id,
+        voterColor: hugo.color,
+        voterName: hugo.name
     });
 
-    impostorGameState.votesCastForHugo++;
+    // All impostors vote for the same target
+    const aliveImpostors = impostorGameState.characters.filter(c =>
+        c.isImpostor && c.alive && !c.ejected && !c.isHugo
+    );
 
-    // Update display to show new vote
-    updateImpostorDisplay();
-
-    // Check if we need more votes
-    if (impostorGameState.votesCastForHugo < impostorGameState.votesNeededForHugo) {
-        scheduleNextVote();
-    } else {
-        // All needed votes cast, finish voting
-        finishAutomatedVoting();
+    for (const impostor of aliveImpostors) {
+        impostorGameState.individualVotes[targetId].push({
+            voterId: impostor.id,
+            voterColor: impostor.color,
+            voterName: impostor.name
+        });
     }
+
+    // Proceed to Phase 4 and 5
+    executePhase4And5Voting();
 }
 
-// Schedule the next vote with random delay
-function scheduleNextVote() {
-    if (!impostorGameState.automatedVotingActive) return;
+// PHASE 4 & 5: Remaining crewmate votes + count votes and eject
+function executePhase4And5Voting() {
+    const aliveCrewmates = impostorGameState.characters.filter(c =>
+        !c.isImpostor && c.alive && !c.ejected
+    );
+    const aliveImpostors = impostorGameState.characters.filter(c =>
+        c.isImpostor && c.alive && !c.ejected
+    );
 
-    // Random delay between 0-3 seconds
-    const delay = Math.random() * 3000;
+    // Find crewmates who haven't voted yet
+    const votedCrewmateIds = new Set([
+        ...impostorGameState.hugoSuspectors,
+        ...impostorGameState.impostorSuspectors
+    ]);
+    const remainingCrewmates = aliveCrewmates.filter(c => !votedCrewmateIds.has(c.id));
 
-    const nextVoteTimer = setTimeout(() => {
-        castAutomatedVote();
-    }, delay);
+    // PHASE 4: Determine remaining crewmate voting behavior
+    const targetCharacter = impostorGameState.characters.find(c => c.id === impostorGameState.hugoVoteTarget);
+    const hugoVotedForImpostor = targetCharacter && targetCharacter.isImpostor;
+    const isHugoLastImpostor = aliveImpostors.length === 1 && aliveImpostors[0].isHugo;
 
-    impostorGameState.votingTimers.push(nextVoteTimer);
-}
+    // Special case: Hugo is last impostor
+    if (isHugoLastImpostor) {
+        const hugoAnalysis = analyzePhraseComparison(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
+        const allPhrasesArePerfect = hugoAnalysis.totalVotes === 0;
 
-// Finish automated voting and transition to results
-function finishAutomatedVoting() {
-    impostorGameState.automatedVotingActive = false;
-    clearVotingTimers();
+        if (allPhrasesArePerfect && impostorGameState.hugoSuspectors.length > 0) {
+            // Hugo suspectors vote for Hugo, then after Hugo votes, all remaining vote for Hugo's target
+            // (Hugo's vote and impostor votes already recorded in Phase 3)
+            // Remaining crewmates vote for Hugo's target
+            for (const crewmate of remainingCrewmates) {
+                if (!impostorGameState.individualVotes[impostorGameState.hugoVoteTarget]) {
+                    impostorGameState.individualVotes[impostorGameState.hugoVoteTarget] = [];
+                }
+                impostorGameState.individualVotes[impostorGameState.hugoVoteTarget].push({
+                    voterId: crewmate.id,
+                    voterColor: crewmate.color,
+                    voterName: crewmate.name
+                });
+            }
+        } else if (!allPhrasesArePerfect) {
+            // Hugo's phrase is not perfect - all remaining crewmates vote for Hugo
+            for (const crewmate of remainingCrewmates) {
+                if (!impostorGameState.individualVotes[impostorGameState.hugoId]) {
+                    impostorGameState.individualVotes[impostorGameState.hugoId] = [];
+                }
+                impostorGameState.individualVotes[impostorGameState.hugoId].push({
+                    voterId: crewmate.id,
+                    voterColor: crewmate.color,
+                    voterName: crewmate.name
+                });
+            }
+        } else {
+            // All phrases perfect but no suspectors - vote for Hugo's target
+            for (const crewmate of remainingCrewmates) {
+                if (!impostorGameState.individualVotes[impostorGameState.hugoVoteTarget]) {
+                    impostorGameState.individualVotes[impostorGameState.hugoVoteTarget] = [];
+                }
+                impostorGameState.individualVotes[impostorGameState.hugoVoteTarget].push({
+                    voterId: crewmate.id,
+                    voterColor: crewmate.color,
+                    voterName: crewmate.name
+                });
+            }
+        }
+    } else {
+        // Normal case: Multiple impostors alive
+        if (hugoVotedForImpostor) {
+            // All remaining crewmates vote for the impostor Hugo voted for
+            for (const crewmate of remainingCrewmates) {
+                if (!impostorGameState.individualVotes[impostorGameState.hugoVoteTarget]) {
+                    impostorGameState.individualVotes[impostorGameState.hugoVoteTarget] = [];
+                }
+                impostorGameState.individualVotes[impostorGameState.hugoVoteTarget].push({
+                    voterId: crewmate.id,
+                    voterColor: crewmate.color,
+                    voterName: crewmate.name
+                });
+            }
+        } else {
+            // Hugo voted for crewmate - remaining crewmates vote for random impostor
+            const voteTarget = impostorGameState.randomImpostorTarget !== -1
+                ? impostorGameState.randomImpostorTarget
+                : impostorGameState.hugoVoteTarget;
 
-    // Set final voting results
-    impostorGameState.votingResults = {};
-    impostorGameState.votingResults[impostorGameState.hugoId] = impostorGameState.votesCastForHugo;
+            for (const crewmate of remainingCrewmates) {
+                if (!impostorGameState.individualVotes[voteTarget]) {
+                    impostorGameState.individualVotes[voteTarget] = [];
+                }
+                impostorGameState.individualVotes[voteTarget].push({
+                    voterId: crewmate.id,
+                    voterColor: crewmate.color,
+                    voterName: crewmate.name
+                });
+            }
+        }
+    }
 
-    // Update game phase and proceed with existing logic
-    impostorGameState.gamePhase = 'emergency_meeting';
+    // PHASE 5: Count votes and validate
+    const voteCounts = {};
+    const allVoters = new Set();
 
-    // Update display to show emergency meeting
+    // Count votes
+    for (const characterId in impostorGameState.individualVotes) {
+        const votes = impostorGameState.individualVotes[characterId];
+        voteCounts[characterId] = votes.length;
+
+        // Track voters
+        for (const vote of votes) {
+            allVoters.add(vote.voterId);
+        }
+    }
+
+    // Validate: Each character should vote exactly once
+    const aliveCharacters = impostorGameState.characters.filter(c => c.alive && !c.ejected);
+    if (allVoters.size !== aliveCharacters.length) {
+        console.warn('Voting validation warning: Not all characters voted exactly once');
+    }
+
+    // Store vote counts
+    impostorGameState.votingResults = voteCounts;
+
+    // Update display and proceed to ejection
     updateImpostorDisplay();
 
-    // Wait a moment to show final vote tally, then proceed
     setTimeout(() => {
         voteOutCharacter();
     }, 2000);
-}
-
-// Clear all voting timers
-function clearVotingTimers() {
-    impostorGameState.votingTimers.forEach(timer => clearTimeout(timer));
-    impostorGameState.votingTimers = [];
 }
 
 // Note: Character comparison functions moved to phrase-analyzer.js
@@ -471,16 +583,36 @@ function voteOutCharacter() {
     // Find character with most votes
     let maxVotes = 0;
     let votedOutId = -1;
+    let tiedCharacters = [];
 
     for (const [characterId, votes] of Object.entries(impostorGameState.votingResults)) {
         if (votes > maxVotes) {
             maxVotes = votes;
             votedOutId = parseInt(characterId);
+            tiedCharacters = [votedOutId];
+        } else if (votes === maxVotes && votes > 0) {
+            tiedCharacters.push(parseInt(characterId));
         }
     }
 
+    // Check for tie
+    if (tiedCharacters.length > 1) {
+        // Tie - no one is ejected
+        impostorGameState.currentEjectedCharacter = -1;
+        impostorGameState.currentDeadCharacter = -1;
+
+        // Update display to show tie result
+        updateImpostorDisplay();
+
+        // Continue to next round
+        setTimeout(() => {
+            startNextRound();
+        }, 3000);
+        return;
+    }
+
     if (votedOutId !== -1) {
-        const ejectedCharacter = impostorGameState.characters[votedOutId];
+        const ejectedCharacter = impostorGameState.characters.find(c => c.id === votedOutId);
         ejectedCharacter.ejected = true;
         ejectedCharacter.deathPhrase = getRandomDeathPhrase(
             ejectedCharacter.isImpostor ? 'impostor_ejected' : 'innocent_ejected'
@@ -521,6 +653,9 @@ function startNextRound() {
     impostorGameState.round++;
     impostorGameState.hasVoted = false;
 
+    // Clear votes from previous round
+    impostorGameState.individualVotes = {};
+
     // Resume task progress for new round
     resumeTaskProgressTimer();
 
@@ -557,8 +692,6 @@ function clearAllTimers() {
         clearInterval(impostorGameState.taskProgressInterval);
         impostorGameState.taskProgressInterval = null;
     }
-
-    clearVotingTimers();
 }
 
 // Start new impostor game

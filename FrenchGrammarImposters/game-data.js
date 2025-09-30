@@ -111,8 +111,8 @@ const accentInputPatterns = {
 // Impostor mode configuration constants
 const impostorConfig = {
     totalPlayers: 12,
-    impostors: 5,
-    crewmates: 7,
+    impostors: 3,
+    crewmates: 9,
     taskProgressTotal: 180, // seconds total across all rounds
     hugo: {
         name: 'Hugo',
