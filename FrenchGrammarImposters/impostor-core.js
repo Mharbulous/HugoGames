@@ -304,6 +304,12 @@ function killCrewmate(crewmateId, killedByHugo = true) {
     // Update display immediately to show dead crewmate
     updateImpostorDisplay();
 
+    // Check for victory immediately after killing
+    if (checkImpostorVictory()) {
+        endGameImpostorVictory();
+        return;
+    }
+
     // Proceed to emergency meeting immediately
     proceedToEmergencyMeeting();
 }
@@ -368,7 +374,7 @@ function executePhase1And2Voting() {
     });
 
     // Add new suspectors based on current errors (suspectors persist for rest of game)
-    const neededSuspectors = hugoErrorCount;
+    const neededSuspectors = impostorGameState.hugoSuspectors.length + hugoErrorCount;
 
     // Add more suspectors if we need them
     while (impostorGameState.hugoSuspectors.length < neededSuspectors && aliveCrewmates.length > 0) {
@@ -665,7 +671,7 @@ function checkImpostorVictory() {
     const aliveCrewmates = impostorGameState.characters.filter(c =>
         !c.isImpostor && c.alive && !c.ejected
     );
-    return aliveCrewmates.length === 0;
+    return aliveCrewmates.length <= 1;
 }
 
 // Start next round
@@ -675,6 +681,12 @@ function startNextRound() {
 
     // Clear votes from previous round
     impostorGameState.individualVotes = {};
+
+    // Check for victory before starting new round (safety catch)
+    if (checkImpostorVictory()) {
+        endGameImpostorVictory();
+        return;
+    }
 
     // Resume task progress for new round
     resumeTaskProgressTimer();
