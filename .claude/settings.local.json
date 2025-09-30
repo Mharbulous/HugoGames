@@ -14,7 +14,8 @@
       "WebFetch(domain:www.schemecolor.com)",
       "Bash(grep:*)",
       "Bash(mkdir:*)",
-      "Bash(ffprobe:*)"
+      "Bash(ffprobe:*)",
+      "Bash(npm run serve:*)"
     ],
     "deny": [],
     "ask": []

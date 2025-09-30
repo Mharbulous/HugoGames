@@ -24,6 +24,7 @@ let impostorGameState = {
     currentDeadCharacter: -1, // Track most recently killed character
     currentEjectedCharacter: -1, // Track most recently ejected character
     actionInProgress: false, // Track if kill/sabotage action is in progress
+    usedHugoPhrases: [], // Track phrase indices Hugo has used across rounds
     // New voting system state
     hugoSuspectors: [], // Crewmates that voted for Hugo and will continue voting until Hugo has perfect phrase
     randomImpostorTarget: -1, // The impostor receiving Phase 2 votes
@@ -58,6 +59,7 @@ function initializeImpostorGame() {
         currentDeadCharacter: -1,
         currentEjectedCharacter: -1,
         actionInProgress: false,
+        usedHugoPhrases: [],
         // New voting system state
         hugoSuspectors: [],
         randomImpostorTarget: -1,
@@ -105,6 +107,7 @@ function initializeImpostorGame() {
             name: shuffledCrewmateData[crewmateIndex].name,
             color: shuffledCrewmateData[crewmateIndex].color,
             phrase: shuffledPairs[i].correct,
+            pairIndex: i, // Track which phrase pair this character is using
             isImpostor: false,
             isHugo: false,
             alive: true,
@@ -134,6 +137,7 @@ function initializeImpostorGame() {
             color: shuffledCrewmateData[colorIndex].color,
             phrase: shuffledPairs[pairIndex].impostor,
             correctPhrase: shuffledPairs[pairIndex].correct,
+            pairIndex: pairIndex, // Track which phrase pair this character is using
             isImpostor: true,
             isHugo: false,
             alive: true,
@@ -211,23 +215,39 @@ function startPhraseCorrection() {
     resumeTaskProgressTimer();
 
     // Select random phrase for Hugo to correct
+    // Filter out phrases already assigned to other characters AND phrases Hugo has already used
     const availablePairs = phrasePairs.filter((_, index) =>
-        !impostorGameState.characters.some(char => char.pairIndex === index)
+        !impostorGameState.characters.some(char => char.pairIndex === index) &&
+        !impostorGameState.usedHugoPhrases.includes(index)
     );
 
     if (availablePairs.length === 0) {
-        // Fallback to any pair if all are used
-        impostorGameState.currentPhraseIndex = Math.floor(Math.random() * phrasePairs.length);
+        // All phrases used - reset Hugo's used phrases and try again
+        impostorGameState.usedHugoPhrases = [];
+
+        // Filter again with only character constraints
+        const availableAfterReset = phrasePairs.filter((_, index) =>
+            !impostorGameState.characters.some(char => char.pairIndex === index)
+        );
+
+        if (availableAfterReset.length === 0) {
+            // Fallback to any pair if all are used by other characters
+            impostorGameState.currentPhraseIndex = Math.floor(Math.random() * phrasePairs.length);
+        } else {
+            const selectedPair = availableAfterReset[Math.floor(Math.random() * availableAfterReset.length)];
+            impostorGameState.currentPhraseIndex = phrasePairs.indexOf(selectedPair);
+        }
     } else {
         const selectedPair = availablePairs[Math.floor(Math.random() * availablePairs.length)];
         impostorGameState.currentPhraseIndex = phrasePairs.indexOf(selectedPair);
     }
 
-    const selectedPair = phrasePairs[impostorGameState.currentPhraseIndex];
+    // Store this phrase index in Hugo's used phrases
+    if (!impostorGameState.usedHugoPhrases.includes(impostorGameState.currentPhraseIndex)) {
+        impostorGameState.usedHugoPhrases.push(impostorGameState.currentPhraseIndex);
+    }
 
-    // Preserve the previous correct phrase and Hugo's submission for voting feedback before setting new ones
-    impostorGameState.previousCorrectPhrase = impostorGameState.correctPhrase;
-    impostorGameState.previousHugoSubmission = impostorGameState.hugoSubmission;
+    const selectedPair = phrasePairs[impostorGameState.currentPhraseIndex];
 
     impostorGameState.currentPhrase = selectedPair.impostor;
     impostorGameState.correctPhrase = selectedPair.correct;
@@ -290,6 +310,11 @@ function killCrewmate(crewmateId, killedByHugo = true) {
 
 // Proceed to emergency meeting
 function proceedToEmergencyMeeting() {
+    // Preserve the current correct phrase and Hugo's submission for voting feedback
+    // This must happen BEFORE changing the game phase so the voting display shows the current round's data
+    impostorGameState.previousCorrectPhrase = impostorGameState.correctPhrase;
+    impostorGameState.previousHugoSubmission = impostorGameState.hugoSubmission;
+
     impostorGameState.gamePhase = 'emergency_meeting';
 
     // Pause task progress during voting phase
@@ -336,31 +361,26 @@ function executePhase1And2Voting() {
     const hugoAnalysis = analyzePhraseComparison(impostorGameState.hugoSubmission, impostorGameState.correctPhrase);
     const hugoErrorCount = hugoAnalysis.totalVotes;
 
-    if (hugoErrorCount === 0) {
-        // Hugo has perfect phrase - clear persistent suspectors
-        impostorGameState.hugoSuspectors = [];
-    } else {
-        // Assign new suspectors if needed (carry over existing + add new until we reach error count)
-        const neededSuspectors = hugoErrorCount;
+    // Filter out any suspectors who are no longer alive
+    impostorGameState.hugoSuspectors = impostorGameState.hugoSuspectors.filter(id => {
+        const char = impostorGameState.characters.find(c => c.id === id);
+        return char && char.alive && !char.ejected && !char.isImpostor;
+    });
 
-        // Filter out any suspectors who are no longer alive
-        impostorGameState.hugoSuspectors = impostorGameState.hugoSuspectors.filter(id => {
-            const char = impostorGameState.characters.find(c => c.id === id);
-            return char && char.alive && !char.ejected && !char.isImpostor;
-        });
+    // Add new suspectors based on current errors (suspectors persist for rest of game)
+    const neededSuspectors = hugoErrorCount;
 
-        // Add more suspectors if we need them
-        while (impostorGameState.hugoSuspectors.length < neededSuspectors && aliveCrewmates.length > 0) {
-            // Find crewmates not already suspecting Hugo
-            const availableCrewmates = aliveCrewmates.filter(c =>
-                !impostorGameState.hugoSuspectors.includes(c.id)
-            );
+    // Add more suspectors if we need them
+    while (impostorGameState.hugoSuspectors.length < neededSuspectors && aliveCrewmates.length > 0) {
+        // Find crewmates not already suspecting Hugo
+        const availableCrewmates = aliveCrewmates.filter(c =>
+            !impostorGameState.hugoSuspectors.includes(c.id)
+        );
 
-            if (availableCrewmates.length === 0) break;
+        if (availableCrewmates.length === 0) break;
 
-            const newSuspector = availableCrewmates[Math.floor(Math.random() * availableCrewmates.length)];
-            impostorGameState.hugoSuspectors.push(newSuspector.id);
-        }
+        const newSuspector = availableCrewmates[Math.floor(Math.random() * availableCrewmates.length)];
+        impostorGameState.hugoSuspectors.push(newSuspector.id);
     }
 
     // Cast votes from Hugo suspectors

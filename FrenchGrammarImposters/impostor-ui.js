@@ -104,6 +104,10 @@ function updateCharactersDisplay() {
                 : impostorGameState.correctPhrase;
 
             speechContent = createHighlightedFeedback(hugoSubmissionToUse, correctPhraseToUse);
+        } else if (impostorGameState.gamePhase === 'phrase_correction' && !isRecentlyDead) {
+            // During phrase correction phase, hide speech bubbles for all characters except Hugo and recently eliminated
+            speechBubbleClass = '';
+            speechContent = '';
         }
 
         // Determine which SVG to use based on timing and game state
