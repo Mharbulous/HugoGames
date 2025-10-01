@@ -200,18 +200,13 @@ function updateCharactersDisplay() {
 
 // Update game phase specific displays
 function updateGamePhaseDisplay() {
-    const accentHelpCard = document.getElementById('accentHelpCard');
     const voteTitle = document.getElementById('voteTitle');
     const voteInstructions = document.getElementById('voteInstructions');
     const voteButtons = document.getElementById('voteButtons');
 
-    // Hide all phase-specific areas first
-    if (accentHelpCard) accentHelpCard.style.display = 'none';
-
     switch (impostorGameState.gamePhase) {
         case 'phrase_correction':
             updatePhraseCorrectionDisplay();
-            if (accentHelpCard) accentHelpCard.style.display = 'block';
             if (voteTitle) voteTitle.innerHTML = '';
             if (voteInstructions) {
                 voteInstructions.innerHTML = `Round ${impostorGameState.round} - Vous êtes un imposteur ! Corrigez la phrase ET éliminez un membre d'équipage si possible.`;
