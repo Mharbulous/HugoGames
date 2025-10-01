@@ -689,11 +689,11 @@ body::before {
 }
 
 .impostor-laugh-layer.crewmate-layer {
-    animation: laughSwitchCrewmate 0.4s ease-in-out infinite;
+    animation: laughSwitchCrewmate 0.8s ease-in-out infinite;
 }
 
 .impostor-laugh-layer.impostor-layer {
-    animation: laughSwitchImpostor 0.4s ease-in-out infinite;
+    animation: laughSwitchImpostor 0.8s ease-in-out infinite;
 }
 
 /* Victory Chase Animation */
