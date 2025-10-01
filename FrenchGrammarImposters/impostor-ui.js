@@ -547,7 +547,6 @@ function animateVictoryChase() {
 // Initialize UI event handlers
 function initializeImpostorUI() {
     setupAccentInput();
-    setupWindowResize();
 }
 
 // CSS injection for impostor-specific styles removed - now using external CSS file
