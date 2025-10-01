@@ -271,6 +271,26 @@ body::before {
     margin: 20px 0;
 }
 
+.imposter-mode-btn {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: 2px solid #fff;
+    border-radius: 25px;
+    font-size: 1.1em;
+    padding: 15px 30px;
+    margin: 20px 0;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    transition: all 0.3s ease;
+}
+
+.imposter-mode-btn:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.6);
+    transform: translateY(-2px);
+}
+
 .game-message {
     font-size: 1.2em;
     padding: 20px;

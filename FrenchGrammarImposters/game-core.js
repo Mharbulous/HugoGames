@@ -13,11 +13,12 @@ let gameState = {
     hasVoted: false,
     showingResults: false,
     victoryPlayed: false,
-    impostorVictoryPlayed: false
+    impostorVictoryPlayed: false,
+    innocentsEjected: 0
 };
 
 function initializeGame() {
-    gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'game_start', hasVoted: false, showingResults: false, victoryPlayed: false, impostorVictoryPlayed: false };
+    gameState = { crewmates: [], impostors: [], round: 1, gameOver: false, currentDeadCrewmate: -1, currentEjectedCrewmate: -1, isRevealing: false, votingPhase: 'game_start', hasVoted: false, showingResults: false, victoryPlayed: false, impostorVictoryPlayed: false, innocentsEjected: 0 };
     document.querySelector('.vote-title').innerHTML = '';
     document.getElementById('voteInstructions').innerHTML = 'Les imposteurs menacent la langue française avec la grammaire anglaise.<br><br>Sauvez la langue française, pour l\'Alliance Française !';
     const shuffledPairs = [...phrasePairs].sort(() => Math.random() - 0.5);
@@ -148,6 +149,11 @@ function vote(crewmateId) {
     votedCrewmate.ejected = true;
     votedCrewmate.deathPhrase = getRandomDeathPhrase(votedCrewmate.isImpostor ? 'impostor_ejected' : 'innocent_ejected');
 
+    // Track innocent ejections for perfect game detection
+    if (!votedCrewmate.isImpostor) {
+        gameState.innocentsEjected++;
+    }
+
     // Clear the current dead crewmate and set the current ejected crewmate
     gameState.currentDeadCrewmate = -1;
     gameState.currentEjectedCrewmate = crewmateId;
@@ -181,14 +187,31 @@ function checkGameEnd() {
     const voteButtons = document.getElementById('voteButtons');
 
     if (aliveImpostors === 0) {
+        // Check for perfect game (no innocents ejected)
+        const isPerfectGame = gameState.innocentsEjected === 0;
+
         // Display victory message in vote buttons area, preserving the feedback message above
-        voteButtons.innerHTML = `
-            <br><div class="victory-message">
-                <h2 style="color: #4ecdc4; margin: 0;">🎉 Victory!</h2>
-                <p style="color: #fff; margin: 10px 0;">Vous avez sauvé la langue française des imposteurs anglais !</p>
-                <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
-            </div>
-        `;
+        if (isPerfectGame) {
+            voteButtons.innerHTML = `
+                <br><div class="victory-message">
+                    <h2 style="color: #4ecdc4; margin: 0;">🎉 Perfect Game! 🎉</h2>
+                    <p style="color: #fff; margin: 10px 0;">Vous avez sauvé la langue française sans perdre un seul coéquipier!</p>
+                    <p style="color: #f5f557; margin: 10px 0; font-weight: bold;">Vous avez débloqué le mode Imposteur!</p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button class="imposter-mode-btn" onclick="window.location.href='PlayAsImposter.html'">Play as Imposter</button>
+                        <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            voteButtons.innerHTML = `
+                <br><div class="victory-message">
+                    <h2 style="color: #4ecdc4; margin: 0;">🎉 Victory!</h2>
+                    <p style="color: #fff; margin: 10px 0;">Vous avez sauvé la langue française des imposteurs anglais !</p>
+                    <button class="new-game-btn" onclick="startNewGame()">Nouvelle Partie</button>
+                </div>
+            `;
+        }
 
         // Only play victory sound once and only after feedback reveal is completed
         if (!gameState.victoryPlayed && gameState.showingResults) {
