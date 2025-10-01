@@ -373,23 +373,32 @@ function executePhase1And2Voting() {
         return char && char.alive && !char.ejected && !char.isImpostor;
     });
 
-    // Add new suspectors based on current errors (suspectors persist for rest of game)
-    const neededSuspectors = impostorGameState.hugoSuspectors.length + hugoErrorCount;
+    // IMPORTANT: Once a crewmate becomes a Hugo suspector, they remain a suspector PERMANENTLY
+    // This makes the voting pattern obvious to players: if they make errors, crewmates will
+    // ALWAYS vote for them in every subsequent round, regardless of future performance.
+    // Players must eliminate suspicious crewmates to survive.
 
-    // Add more suspectors if we need them
-    while (impostorGameState.hugoSuspectors.length < neededSuspectors && aliveCrewmates.length > 0) {
-        // Find crewmates not already suspecting Hugo
-        const availableCrewmates = aliveCrewmates.filter(c =>
-            !impostorGameState.hugoSuspectors.includes(c.id)
-        );
+    // Add new suspectors based on current errors (but never remove existing suspectors)
+    if (hugoErrorCount > 0) {
+        const neededNewSuspectors = hugoErrorCount;
 
-        if (availableCrewmates.length === 0) break;
+        // Add new suspectors if we need them
+        let addedCount = 0;
+        while (addedCount < neededNewSuspectors && aliveCrewmates.length > 0) {
+            // Find crewmates not already suspecting Hugo
+            const availableCrewmates = aliveCrewmates.filter(c =>
+                !impostorGameState.hugoSuspectors.includes(c.id)
+            );
 
-        const newSuspector = availableCrewmates[Math.floor(Math.random() * availableCrewmates.length)];
-        impostorGameState.hugoSuspectors.push(newSuspector.id);
+            if (availableCrewmates.length === 0) break;
+
+            const newSuspector = availableCrewmates[Math.floor(Math.random() * availableCrewmates.length)];
+            impostorGameState.hugoSuspectors.push(newSuspector.id);
+            addedCount++;
+        }
     }
 
-    // Cast votes from Hugo suspectors
+    // ALL Hugo suspectors vote for Hugo, regardless of current round performance
     for (const suspectorId of impostorGameState.hugoSuspectors) {
         const suspector = impostorGameState.characters.find(c => c.id === suspectorId);
         if (suspector) {
