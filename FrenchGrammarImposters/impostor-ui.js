@@ -384,9 +384,31 @@ function setupAccentInput() {
     let lastChar = '';
 
     phraseInput.addEventListener('input', function(event) {
-        const currentValue = this.textContent;
+        let currentValue = this.textContent;
         const selection = window.getSelection();
-        const cursorPosition = selection.anchorOffset;
+        let cursorPosition = selection.anchorOffset;
+
+        // Normalize curly quotes to straight quotes
+        const normalizedValue = currentValue
+            .replace(/'/g, "'")  // Right single quotation mark → apostrophe
+            .replace(/'/g, "'")  // Left single quotation mark → apostrophe
+            .replace(/"/g, '"')  // Left double quotation mark → quotation mark
+            .replace(/"/g, '"'); // Right double quotation mark → quotation mark
+
+        if (normalizedValue !== currentValue) {
+            this.textContent = normalizedValue;
+            currentValue = normalizedValue;
+
+            // Restore cursor position after normalization
+            const range = document.createRange();
+            const sel = window.getSelection();
+            if (this.firstChild) {
+                range.setStart(this.firstChild, Math.min(cursorPosition, normalizedValue.length));
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
 
         if (currentValue.length > 0) {
             const currentChar = currentValue.charAt(cursorPosition - 1);
