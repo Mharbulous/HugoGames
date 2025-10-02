@@ -67,10 +67,10 @@ class PhraseAnalyzer {
         const normalizeQuotes = (text) => {
             if (!text) return '';
             return text
-                .replace(/'/g, "'")  // Right single quotation mark → apostrophe
-                .replace(/'/g, "'")  // Left single quotation mark → apostrophe
-                .replace(/"/g, '"')  // Left double quotation mark → quotation mark
-                .replace(/"/g, '"'); // Right double quotation mark → quotation mark
+                .replace(/\u2019/g, "'")  // Right single quotation mark (') → apostrophe
+                .replace(/\u2018/g, "'")  // Left single quotation mark (') → apostrophe
+                .replace(/\u201C/g, '"')  // Left double quotation mark (") → quotation mark
+                .replace(/\u201D/g, '"'); // Right double quotation mark (") → quotation mark
         };
 
         const subTokens = this.tokenize(normalizeQuotes(submission || ''));
