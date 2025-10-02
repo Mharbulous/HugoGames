@@ -71,6 +71,9 @@ class PhraseAnalyzer {
                 .replace(/\u2018/g, "'")  // Left single quotation mark (') → apostrophe
                 .replace(/\u02BC/g, "'")  // Modifier letter apostrophe (ʼ) → apostrophe
                 .replace(/\u2032/g, "'")  // Prime (′) → apostrophe
+                .replace(/\u02B9/g, "'")  // Modifier letter prime (ʹ) → apostrophe
+                .replace(/\u02BB/g, "'")  // Modifier letter turned comma (ʻ) → apostrophe
+                .replace(/\uFF07/g, "'")  // Fullwidth apostrophe (＇) → apostrophe
                 .replace(/\u201C/g, '"')  // Left double quotation mark (") → quotation mark
                 .replace(/\u201D/g, '"')  // Right double quotation mark (") → quotation mark
                 .replace(/\u201E/g, '"')  // Double low-9 quotation mark („) → quotation mark
