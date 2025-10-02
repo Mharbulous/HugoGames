@@ -63,8 +63,18 @@ class PhraseAnalyzer {
     }
 
     analyzePhraseComparison(submission, correct) {
-        const subTokens = this.tokenize(submission || '');
-        const corrTokens = this.tokenize(correct || '');
+        // Normalize curly quotes to straight quotes in both submission and correct phrase
+        const normalizeQuotes = (text) => {
+            if (!text) return '';
+            return text
+                .replace(/'/g, "'")  // Right single quotation mark → apostrophe
+                .replace(/'/g, "'")  // Left single quotation mark → apostrophe
+                .replace(/"/g, '"')  // Left double quotation mark → quotation mark
+                .replace(/"/g, '"'); // Right double quotation mark → quotation mark
+        };
+
+        const subTokens = this.tokenize(normalizeQuotes(submission || ''));
+        const corrTokens = this.tokenize(normalizeQuotes(correct || ''));
         
         if (!subTokens.length && !corrTokens.length) {
             return { words: { correct: [], wrong: [], missing: [], extra: [] },
