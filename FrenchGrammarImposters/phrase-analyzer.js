@@ -63,14 +63,18 @@ class PhraseAnalyzer {
     }
 
     analyzePhraseComparison(submission, correct) {
-        // Normalize curly quotes to straight quotes in both submission and correct phrase
+        // Normalize all quote variants to straight quotes in both submission and correct phrase
         const normalizeQuotes = (text) => {
             if (!text) return '';
             return text
                 .replace(/\u2019/g, "'")  // Right single quotation mark (') → apostrophe
                 .replace(/\u2018/g, "'")  // Left single quotation mark (') → apostrophe
+                .replace(/\u02BC/g, "'")  // Modifier letter apostrophe (ʼ) → apostrophe
+                .replace(/\u2032/g, "'")  // Prime (′) → apostrophe
                 .replace(/\u201C/g, '"')  // Left double quotation mark (") → quotation mark
-                .replace(/\u201D/g, '"'); // Right double quotation mark (") → quotation mark
+                .replace(/\u201D/g, '"')  // Right double quotation mark (") → quotation mark
+                .replace(/\u201E/g, '"')  // Double low-9 quotation mark („) → quotation mark
+                .replace(/\u201F/g, '"'); // Double high-reversed-9 quotation mark (‟) → quotation mark
         };
 
         const subTokens = this.tokenize(normalizeQuotes(submission || ''));
