@@ -2,50 +2,74 @@
 // All game constants and static data
 
 const phrasePairs = [
-    // Preposition errors with verbs
-    { correct: "On va jouer à Minecraft ce soir.", impostor: "On va jouer Minecraft ce soir." },
+// === VERB CONJUGATION ERRORS (Present Tense) ===
+    // Focus on common irregular verbs from Grade 4
+    { correct: "Je suis content aujourd'hui.", impostor: "Je être content aujourd'hui." },
+    { correct: "Nous avons un chat noir.", impostor: "Nous avoir un chat noir." },
+    { correct: "Elle va à l'école.", impostor: "Elle aller à l'école." },
+    { correct: "Ils font leurs devoirs.", impostor: "Ils faire leurs devoirs." },
+    { correct: "Tu aimes les pommes?", impostor: "Tu aimer les pommes?" },
+    { correct: "Nous mangeons du pain.", impostor: "Nous manger du pain." },
     
-    // Expressions with avoir vs. être
-    { correct: "Tu as de la chance de venir avec nous!", impostor: "Tu es de la chance de venir avec nous!" },
+    // === ARTICLE GENDER ERRORS ===
+    // Common gender mistakes with familiar vocabulary
+    { correct: "La maison est grande.", impostor: "Le maison est grande." },
+    { correct: "Le chat est mignon.", impostor: "La chat est mignon." },
+    { correct: "Une pomme rouge.", impostor: "Un pomme rouge." },
+    { correct: "L'école est fermée.", impostor: "Le école est fermée." },
     
-    // Negation patterns
-    { correct: "Je ne veux pas partir.", impostor: "Je ne veux pas de partir." },
+    // === ADJECTIVE AGREEMENT ERRORS ===
+    // Simple adjective agreement patterns
+    { correct: "Ma soeur est petite.", impostor: "Ma soeur est petit." },
+    { correct: "Les chiens sont gentils.", impostor: "Les chiens sont gentil." },
+    { correct: "Une grande famille.", impostor: "Une grand famille." },
+    { correct: "Des livres intéressants.", impostor: "Des livres intéressant." },
     
-    // Article usage after negation
-    { correct: "Il n'y a pas de problème.", impostor: "Il n'y a pas un problème." },
+    // === BANGS ADJECTIVE PLACEMENT ===
+    // Adjectives that go before the noun
+    { correct: "Un petit chien.", impostor: "Un chien petit." },
+    { correct: "Une belle maison.", impostor: "Une maison belle." },
+    { correct: "Les bonnes idées.", impostor: "Les idées bonnes." },
+    { correct: "Mon nouveau livre.", impostor: "Mon livre nouveau." },
     
-    // Time expressions
-    { correct: "Il est trop excité!", impostor: "Il a trop excité!" },
+    // === PASSÉ COMPOSÉ FORMATION ===
+    // Basic past tense with avoir (Grade 4 introduction)
+    { correct: "J'ai mangé une pizza.", impostor: "J'ai manger une pizza." },
+    { correct: "Elle a fini ses devoirs.", impostor: "Elle a finir ses devoirs." },
+    { correct: "Nous avons joué dehors.", impostor: "Nous avons jouer dehors." },
+    { correct: "Tu as regardé la télé?", impostor: "Tu as regarder la télé?" },
     
-    // Prepositions with places/activities
-    { correct: "On va au camp demain.", impostor: "On va à camp demain." },
+    // === BASIC PREPOSITIONS ===
+    // Common preposition choices from Grade 4
+    { correct: "Je vais à l'école.", impostor: "Je vais dans l'école." },
+    { correct: "Le livre est sur la table.", impostor: "Le livre est dans la table." },
+    { correct: "Je joue avec mes amis.", impostor: "Je joue à mes amis." },
+    { correct: "Il habite dans une maison.", impostor: "Il habite à une maison." },
     
-    // Pronoun placement
-    { correct: "Je l'ai vu hier.", impostor: "Je l'ai vu lui hier." },
+    // === SIMPLE NEGATION ===
+    // Basic ne...pas structure
+    { correct: "Je n'aime pas les légumes.", impostor: "Je ne aime pas les légumes." },
+    { correct: "Il ne veut pas dormir.", impostor: "Il veut ne pas dormir." },
+    { correct: "Nous ne sommes pas fatigués.", impostor: "Nous ne pas sommes fatigués." },
     
-    // Partitive articles
-    { correct: "Tu veux de l'aide?", impostor: "Tu veux l'aide?" },
+    // === ÊTRE vs. AVOIR ===
+    // Common confusion between these two verbs
+    { correct: "J'ai faim.", impostor: "Je suis faim." },
+    { correct: "Il a froid.", impostor: "Il est froid." },
+    { correct: "Tu as huit ans.", impostor: "Tu es huit ans." },
+    { correct: "Elle a soif.", impostor: "Elle est soif." },
     
-    // Expressions of emotion/state
-    { correct: "J'ai peur des zombies.", impostor: "Je suis peur des zombies." },
+    // === PLURAL FORMS ===
+    // Simple singular to plural transitions
+    { correct: "Les enfants jouent.", impostor: "Les enfants joue." },
+    { correct: "Mes amis sont gentils.", impostor: "Mes ami sont gentils." },
+    { correct: "Des chats noirs.", impostor: "Des chat noir." },
     
-    // Prepositions with transportation
-    { correct: "Je vais en avion.", impostor: "Je vais avec l'avion." },
-    
-    // Chez vs. à
-    { correct: "Je vais chez mon ami.", impostor: "Je vais à mon ami." },
-    
-    // Weather expressions
-    { correct: "Il fait beau aujourd'hui!", impostor: "Il est beau aujourd'hui!" },
-    
-    // Article with parts of day
-    { correct: "On se voit le matin.", impostor: "On se voit au matin." },
-    
-    // Pronoun y
-    { correct: "J'y vais maintenant.", impostor: "Je vais y maintenant." },
-    
-    // Faire expressions
-    { correct: "Tu fais quoi ce soir?", impostor: "Tu es quoi ce soir?" }
+    // === FUTUR PROCHE (Going to...) ===
+    // Simple future with aller + infinitive
+    { correct: "Je vais manger.", impostor: "Je vais mange." },
+    { correct: "Elle va dormir.", impostor: "Elle va dort." },
+    { correct: "Nous allons jouer.", impostor: "Nous allons jouons." }
 ];
 
 const crewmateData = [
