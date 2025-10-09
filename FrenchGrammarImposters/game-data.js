@@ -1,7 +1,7 @@
 // French Grammar Impostors - Game Data Module
 // All game constants and static data
 
-const PhrasePairs = [
+const phrasePairs = [
     // Preposition errors with verbs
     { correct: "On va jouer à Minecraft ce soir.", impostor: "On va jouer Minecraft ce soir." },
     
