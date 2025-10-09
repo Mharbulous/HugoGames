@@ -1,51 +1,17 @@
 // French Grammar Impostors - Game Data Module
 // All game constants and static data
 
-const PhrasePairs = [
-    // Preposition errors with verbs
-    { correct: "On va jouer à Minecraft ce soir.", impostor: "On va jouer Minecraft ce soir." },
-    
-    // Expressions with avoir vs. être
-    { correct: "Tu as de la chance de venir avec nous!", impostor: "Tu es de la chance de venir avec nous!" },
-    
-    // Negation patterns
-    { correct: "Je ne veux pas partir.", impostor: "Je ne veux pas de partir." },
-    
-    // Article usage after negation
-    { correct: "Il n'y a pas de problème.", impostor: "Il n'y a pas un problème." },
-    
-    // Time expressions
-    { correct: "Il est trop excité!", impostor: "Il a trop excité!" },
-    
-    // Prepositions with places/activities
-    { correct: "On va au camp demain.", impostor: "On va à camp demain." },
-    
-    // Pronoun placement
-    { correct: "Je l'ai vu hier.", impostor: "Je l'ai vu lui hier." },
-    
-    // Partitive articles
-    { correct: "Tu veux de l'aide?", impostor: "Tu veux l'aide?" },
-    
-    // Expressions of emotion/state
-    { correct: "J'ai peur des zombies.", impostor: "Je suis peur des zombies." },
-    
-    // Prepositions with transportation
-    { correct: "Je vais en avion.", impostor: "Je vais avec l'avion." },
-    
-    // Chez vs. à
-    { correct: "Je vais chez mon ami.", impostor: "Je vais à mon ami." },
-    
-    // Weather expressions
-    { correct: "Il fait beau aujourd'hui!", impostor: "Il est beau aujourd'hui!" },
-    
-    // Article with parts of day
-    { correct: "On se voit le matin.", impostor: "On se voit au matin." },
-    
-    // Pronoun y
-    { correct: "J'y vais maintenant.", impostor: "Je vais y maintenant." },
-    
-    // Faire expressions
-    { correct: "Tu fais quoi ce soir?", impostor: "Tu es quoi ce soir?" }
+const phrasePairs = [
+    { correct: "Lundi, j'ai un match de soccer.", impostor: "Sur lundi, j'ai un match de soccer." },
+    { correct: "J'ai regardé un film à la télévision.", impostor: "J'ai regardé un film sur la télévision." },
+    { correct: "Je n'ai pas de crayon.", impostor: "Je n'ai pas un crayon." },
+    { correct: "J'ai chaud. Est-ce que je peux avoir un verre d'eau?", impostor: "Je suis chaud. Est-ce que je peux avoir un verre de l'eau?" },
+    { correct: "Qu'est-ce que tu fais ici? Oh, rien du tout!", impostor: "Qu'est-ce que tu fais ici? Oh, rien!" },
+    { correct: "Quelle heure est-il?", impostor: "Quel temps est-il?" },
+    { correct: "Je vais chez le médecin.", impostor: "Je vais au médecin." },
+    { correct: "Je suis allé à Victoria.", impostor: "J'ai allé à Victoria." },
+    { correct: "J'ai peur et j'ai froid.", impostor: "J'ai peur et je suis froid." },
+    { correct: "Je l'aime parce qu'il est le meilleur.", impostor: "Je l'aime lui parce qu'il est le meilleur." },
 ];
 
 const crewmateData = [
