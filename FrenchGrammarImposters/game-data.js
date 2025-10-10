@@ -3,6 +3,18 @@
 
 const phrasePairs = [
 // === VERB CONJUGATION ERRORS (Present Tense) ===
+    // Sentences from Madame Brown quiz
+    { correct: "Lundi, j'ai un match de soccer.", impostor: "Sur lundi, j'ai un match de soccer." },
+    { correct: "J'ai regardé un film à la télévision.", impostor: "J'ai regardé un film sur la télévision." },
+    { correct: "Je n'ai pas de crayon.", impostor: "Je n'ai pas un crayon." },
+    { correct: "J'ai chaud. Est-ce que je peux avoir un verre d'eau?", impostor: "Je suis chaud. Est-ce que je peux avoir un verre de l'eau?" },
+    { correct: "Qu'est-ce que tu fais ici? Oh, rien du tout!", impostor: "Qu'est-ce que tu fais ici? Oh, rien!" },
+    { correct: "Quelle heure est-il?", impostor: "Quel temps est-il?" },
+    { correct: "Je vais chez le médecin.", impostor: "Je vais au médecin." },
+    { correct: "Je suis allé à Victoria.", impostor: "J'ai allé à Victoria." },
+    { correct: "J'ai peur et j'ai froid.", impostor: "J'ai peur et je suis froid." },
+    { correct: "Je l'aime parce qu'il est le meilleur.", impostor: "Je l'aime lui parce qu'il est le meilleur." },
+
     // Focus on common irregular verbs from Grade 4
     { correct: "Je suis content aujourd'hui.", impostor: "Je être content aujourd'hui." },
     { correct: "Nous avons un chat noir.", impostor: "Nous avoir un chat noir." },
